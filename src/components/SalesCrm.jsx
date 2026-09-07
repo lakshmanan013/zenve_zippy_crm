@@ -496,6 +496,400 @@ function TeamDashboard({ data, region, scopeLabel }) {
 }
 
 /* =========================================================
+   REPORTS VIEW — Daily Reporting (matches UI screenshot)
+========================================================= */
+
+// Sample brands / campaigns used when no backend visit data exists yet.
+const SAMPLE_VISITS = [
+  { id: 1, advaitNo: "28690", doctorName: "KAPIL RANGAN", tag: "CARD", brands: "Nebicard, Losar, Nikoran", campaign: "HeartBeat 2026", status: "Reported" },
+  { id: 2, advaitNo: "228442", doctorName: "LACHIKARATHMAN DEWEGOWDA", tag: "CARD", brands: "Chymoral, Shelcal, Nexpro", campaign: "GastroCare Q3", status: "Reported" },
+  { id: 3, advaitNo: "28588", doctorName: "MANOHAR J SURANAGI", tag: "NEURO", brands: "Veloz, Unienzyme", campaign: "NeuroShield 2026", status: "Reported" },
+  { id: 4, advaitNo: "218267", doctorName: "SHIVA KUMAR D ORESWAMY", tag: "ORTHO", brands: "Chymoral Forte, Osteo-Plus", campaign: "Mobility First", status: "Not Reported" },
+];
+
+function ReportsView({ data, execId }) {
+  const today = new Date().toISOString().slice(0, 10);
+  const [reportingType, setReportingType] = useState("Field");
+  const [reportDate, setReportDate] = useState(today);
+  const [visitTab, setVisitTab] = useState("planned"); // "planned" | "unplanned"
+  const [searchDoctor, setSearchDoctor] = useState("");
+  const [selectedDoctor, setSelectedDoctor] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all"); // "all" | "reported" | "not_reported"
+  const [visits, setVisits] = useState(SAMPLE_VISITS);
+
+  // Doctors belonging to exec's pincodes (for the territory dropdown)
+  const exec = data.executives.find((e) => e.id === execId) || data.executives[0];
+  const myPincodes = useMemo(
+    () => new Set(data.coverage.filter((c) => c.executive_id === exec?.id).map((c) => c.pincode)),
+    [data.coverage, exec]
+  );
+  const territoryDoctors = useMemo(
+    () => data.doctors.filter((d) => myPincodes.has(d.pincode)),
+    [data.doctors, myPincodes]
+  );
+
+  const filteredVisits = visits.filter((v) => {
+    const matchSearch = !searchDoctor || v.doctorName.toLowerCase().includes(searchDoctor.toLowerCase());
+    const matchStatus =
+      statusFilter === "all" ||
+      (statusFilter === "reported" && v.status === "Reported") ||
+      (statusFilter === "not_reported" && v.status === "Not Reported");
+    return matchSearch && matchStatus;
+  });
+
+  const reported = visits.filter((v) => v.status === "Reported").length;
+  const pending = visits.length - reported;
+
+  function handleAddDoctor() {
+    if (!selectedDoctor) return;
+    const doc = territoryDoctors.find((d) => String(d.id) === selectedDoctor);
+    if (!doc) return;
+    if (visits.some((v) => v.advaitNo === String(doc.id))) return;
+    setVisits((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        advaitNo: String(doc.id),
+        doctorName: doc.name.toUpperCase(),
+        tag: doc.specializations ? doc.specializations.split(",")[0].trim().toUpperCase().slice(0, 6) : "GEN",
+        brands: "—",
+        campaign: "—",
+        status: "Not Reported",
+      },
+    ]);
+    setSelectedDoctor("");
+  }
+
+  function handleRemoveVisit() {
+    setVisits((prev) => prev.filter((v) => v.status !== "Not Reported"));
+  }
+
+  function toggleStatus(id) {
+    setVisits((prev) =>
+      prev.map((v) =>
+        v.id === id ? { ...v, status: v.status === "Reported" ? "Not Reported" : "Reported" } : v
+      )
+    );
+  }
+
+  return (
+    <div className="rpt-wrap">
+      {/* Page heading */}
+      <div className="rpt-page-title">
+        <span className="rpt-back">‹</span>
+        <h2>New Daily Reporting</h2>
+      </div>
+
+      {/* Top controls */}
+      <div className="rpt-controls panel">
+        <div className="rpt-control-row">
+          <div className="rpt-field">
+            <label>Reporting Type *</label>
+            <select value={reportingType} onChange={(e) => setReportingType(e.target.value)}>
+              <option>Field</option>
+              <option>Office</option>
+              <option>Virtual</option>
+            </select>
+          </div>
+          <div className="rpt-field">
+            <label>Report Date *</label>
+            <input type="date" value={reportDate} onChange={(e) => setReportDate(e.target.value)} />
+          </div>
+          <div className="rpt-day-type">
+            <span className="rpt-dot rpt-dot-green"></span> Work
+            <span className="rpt-dot rpt-dot-red"></span> Leave
+            <span className="rpt-dot rpt-dot-blue"></span> Holiday
+          </div>
+          <div className="rpt-control-actions">
+            <button className="rpt-btn-primary">Proceed</button>
+            <button className="rpt-btn-outline">View Reported Calls ({reported})</button>
+          </div>
+        </div>
+      </div>
+
+      {/* Planned / Unplanned tabs */}
+      <div className="rpt-tabs-bar panel">
+        <button
+          className={"rpt-tab" + (visitTab === "planned" ? " active" : "")}
+          onClick={() => setVisitTab("planned")}
+        >
+          Planned Visit
+        </button>
+        <button
+          className={"rpt-tab" + (visitTab === "unplanned" ? " active" : "")}
+          onClick={() => setVisitTab("unplanned")}
+        > Unplanned Visit
+        </button>
+      </div>
+
+      {/* Doctor search + add row */}
+      <div className="rpt-add-row panel">
+        <div className="rpt-search-wrap">
+          <label>Search Doctor</label>
+          <div className="rpt-search-input-wrap">
+            <input
+              type="text"
+              placeholder="Type name, Advait No., or speciality…"
+              value={searchDoctor}
+              onChange={(e) => setSearchDoctor(e.target.value)}
+            />
+            <span className="rpt-search-icon">🔍</span>
+          </div>
+        </div>
+        <div className="rpt-select-wrap">
+          <label>Select Doctor</label>
+          <select value={selectedDoctor} onChange={(e) => setSelectedDoctor(e.target.value)}>
+            <option value="">-- Choose Doctor from Territory --</option>
+            {territoryDoctors.map((d) => (
+              <option key={d.id} value={d.id}>{d.name}</option>
+            ))}
+          </select>
+        </div>
+        <button className="rpt-btn-primary" onClick={handleAddDoctor}>+ Add</button>
+        <button className="rpt-btn-danger" onClick={handleRemoveVisit}>🗑 Remove Visit Details</button>
+      </div>
+
+      {/* Indication filters */}
+      <div className="rpt-filter-row panel">
+        <div className="rpt-indication">
+          <span>Indication :</span>
+          <span className="rpt-ind-pill rpt-green">Excel</span>
+          <span className="rpt-ind-pill rpt-teal">VIP</span>
+          <span className="rpt-ind-pill rpt-blue">A</span>
+          <span className="rpt-ind-pill rpt-purple">B</span>
+        </div>
+        <div className="rpt-status-filter">
+          <span>Reporting Status:</span>
+          <label>
+            <input type="radio" name="rptStatus" checked={statusFilter === "all"} onChange={() => setStatusFilter("all")} />
+            All
+          </label>
+          <label>
+            <input type="radio" name="rptStatus" checked={statusFilter === "reported"} onChange={() => setStatusFilter("reported")} />
+            Reported
+          </label>
+          <label>
+            <input type="radio" name="rptStatus" checked={statusFilter === "not_reported"} onChange={() => setStatusFilter("not_reported")} />
+            Not Reported
+          </label>
+        </div>
+      </div>
+
+      {/* Visit table */}
+      <div className="panel table-panel rpt-table-panel">
+        <table>
+          <thead>
+            <tr>
+              <th style={{ width: 36 }}><input type="checkbox" /></th>
+              <th>Advait No</th>
+              <th>Doctor Name</th>
+              <th>Brands</th>
+              <th>Campaign Name</th>
+              <th>Status</th>
+              <th>Option</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredVisits.length === 0 ? (
+              <tr><td colSpan={7} style={{ color: "var(--muted-foreground)", textAlign: "center", padding: "1.5rem" }}>No visits found.</td></tr>
+            ) : (
+              filteredVisits.map((v) => (
+                <tr key={v.id}>
+                  <td><input type="checkbox" /></td>
+                  <td>{v.advaitNo}</td>
+                  <td>
+                    <div className="rpt-doc-cell">
+                      <strong>{v.doctorName}</strong>
+                      <span className="rpt-doc-tag">{v.tag}</span>
+                    </div>
+                  </td>
+                  <td><span className="rpt-brands">{v.brands}</span></td>
+                  <td><span className="rpt-campaign">{v.campaign}</span></td>
+                  <td>
+                    <span className={"rpt-status-badge" + (v.status === "Reported" ? " reported" : " not-reported")}>
+                      {v.status}
+                    </span>
+                  </td>
+                  <td>
+                    <div className="rpt-options">
+                      <button className="rpt-btn-sm rpt-btn-outline">Pre Call</button>
+                      <button
+                        className={"rpt-btn-sm" + (v.status === "Reported" ? " rpt-btn-edit" : " rpt-btn-post")}
+                        onClick={() => toggleStatus(v.id)}
+                      >
+                        {v.status === "Reported" ? "Edit Call" : "Post Call"}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Footer summary */}
+      <div className="rpt-footer">
+        <span className="rpt-summary">
+          Total Visits in List: <strong>{visits.length}</strong> | Reported: <strong>{reported}</strong> | Pending: <strong>{pending}</strong>
+        </span>
+        <button className="rpt-btn-final">FINAL SUBMIT</button>
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================
+   DOCTORS VIEW — filtered by exec's assigned pincodes
+========================================================= */
+
+function DoctorsView({ data, execId }) {
+  const [search, setSearch] = useState("");
+  const [filterPincode, setFilterPincode] = useState("all");
+
+  const exec = data.executives.find((e) => e.id === execId) || data.executives[0];
+  const myPincodes = useMemo(
+    () => new Set(data.coverage.filter((c) => c.executive_id === exec?.id).map((c) => c.pincode)),
+    [data.coverage, exec]
+  );
+
+  const myDoctors = useMemo(
+    () => data.doctors.filter((d) => myPincodes.has(d.pincode)),
+    [data.doctors, myPincodes]
+  );
+
+  const pincodeList = useMemo(() => [...myPincodes].sort(), [myPincodes]);
+
+  const filtered = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return myDoctors.filter((d) => {
+      const matchSearch =
+        !term ||
+        d.name?.toLowerCase().includes(term) ||
+        String(d.pincode).includes(term) ||
+        d.specializations?.toLowerCase().includes(term);
+      const matchPin = filterPincode === "all" || d.pincode === filterPincode;
+      return matchSearch && matchPin;
+    });
+  }, [myDoctors, search, filterPincode]);
+
+  function starRating(rating) {
+    const r = Math.round(Number(rating) || 0);
+    return "★".repeat(r) + "☆".repeat(Math.max(0, 5 - r));
+  }
+
+  return (
+    <div className="doc-view-wrap">
+      {/* Header strip */}
+      <div className="doc-view-header">
+        <div>
+          <h2>Doctors in My Territory</h2>
+          <p>{myDoctors.length} doctors across {myPincodes.size} pin code{myPincodes.size !== 1 ? "s" : ""}</p>
+        </div>
+        <div className="doc-view-stats">
+          <span className="doc-stat-pill">
+            <strong>{myPincodes.size}</strong> Pin Codes
+          </span>
+          <span className="doc-stat-pill">
+            <strong>{myDoctors.length}</strong> Doctors
+          </span>
+          <span className="doc-stat-pill">
+            <strong>{myDoctors.filter((d) => d.is_active === "Yes" || d.is_active === true).length}</strong> Active
+          </span>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="doc-view-filters panel">
+        <div className="rpt-search-input-wrap" style={{ flex: 1, minWidth: 220 }}>
+          <input
+            type="text"
+            placeholder="Search by name, specialization, pin code…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <span className="rpt-search-icon">🔍</span>
+        </div>
+        <div className="rpt-field">
+          <label>Pin Code</label>
+          <select value={filterPincode} onChange={(e) => setFilterPincode(e.target.value)}>
+            <option value="all">All Pin Codes</option>
+            {pincodeList.map((pc) => (
+              <option key={pc} value={pc}>{pc}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Doctors table */}
+      {data.loading ? (
+        <p style={{ color: "var(--muted-foreground)", padding: "1rem" }}>Loading doctors…</p>
+      ) : myPincodes.size === 0 ? (
+        <div className="panel" style={{ padding: "1.5rem", color: "var(--muted-foreground)", textAlign: "center" }}>
+          No pin codes assigned to this executive yet.
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="panel" style={{ padding: "1.5rem", color: "var(--muted-foreground)", textAlign: "center" }}>
+          No doctors match your search.
+        </div>
+      ) : (
+        <div className="panel table-panel doc-table-panel">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Doctor Name</th>
+                <th>Qualification</th>
+                <th>Specialization</th>
+                <th>Pin Code</th>
+                <th>Experience</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((doc, i) => {
+                const isActive = doc.is_active === "Yes" || doc.is_active === true;
+                return (
+                  <tr key={doc.id}>
+                    <td style={{ color: "var(--muted-foreground)" }}>{i + 1}</td>
+                    <td>
+                      <div className="doc-name-cell">
+                        <div className="doc-avatar">{doc.name?.charAt(0).toUpperCase() ?? "?"}</div>
+                        <span>{doc.name}</span>
+                      </div>
+                    </td>
+                    <td>{doc.qualification || "—"}</td>
+                    <td>
+                      {doc.specializations ? (
+                        <span className="rpt-doc-tag" style={{ fontSize: "0.7rem" }}>{doc.specializations}</span>
+                      ) : "—"}
+                    </td>
+                    <td>
+                      <span className="doc-pincode-badge">{doc.pincode}</span>
+                    </td>
+                    <td>{doc.experience_years != null ? `${doc.experience_years} yrs` : "—"}</td>
+                    <td>
+                    </td>
+                    <td>
+                      <span className={"doc-status-badge" + (isActive ? " active" : " inactive")}>
+                        {isActive ? "Active" : "Inactive"}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <div style={{ padding: "0.6rem 0.65rem", fontSize: "0.72rem", color: "var(--muted-foreground)", borderTop: "1px solid var(--border)" }}>
+            Showing {filtered.length} of {myDoctors.length} doctors in your territory
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* =========================================================
    SHELL — visual clone of the sales-crm sidebar + header
 ========================================================= */
 
@@ -506,9 +900,16 @@ const ROLES = {
 };
 
 const ROLE_TITLES = {
-  executive: "Sales Executive Dashboard",
-  manager: "Sales Manager Dashboard",
-  regional: "Regional Manager Dashboard",
+  executive: "Sales Executive",
+  manager: "Sales Manager",
+  regional: "Regional Manager",
+};
+
+const SECTION_TITLES = {
+  dashboard: "Dashboard",
+  doctors: "Doctors",
+  plan: "Plan",
+  reports: "Reports",
 };
 
 export default function SalesCrm({ role, onSwitchRole, onExit }) {
@@ -518,6 +919,8 @@ export default function SalesCrm({ role, onSwitchRole, onExit }) {
   const [regionalId, setRegionalId] = useState(null);
   const [region, setRegion] = useState("");
   const [profileOpen, setProfileOpen] = useState(false);
+  // Active sidebar section: "dashboard" | "doctors" | "plan" | "reports"
+  const [activeSection, setActiveSection] = useState("dashboard");
 
   useEffect(() => {
     if (!execId && data.executives.length) setExecId(data.executives[0].id);
@@ -536,9 +939,6 @@ export default function SalesCrm({ role, onSwitchRole, onExit }) {
     [data.executives]
   );
 
-  // Whichever person is "in the seat" for the current role — this is what
-  // the profile button shows/edits. New records added via the admin Data
-  // tables show up here automatically since they come from live fetchList.
   const currentTableKey = ROLE_TABLE_KEY[role];
   const currentRecord =
     role === ROLES.EXECUTIVE
@@ -552,6 +952,15 @@ export default function SalesCrm({ role, onSwitchRole, onExit }) {
     return name.trim().charAt(0).toUpperCase();
   }
 
+  // When switching role via the role buttons in the sidebar, also snap
+  // back to dashboard so content area always matches.
+  function handleSwitchRole(newRole) {
+    setActiveSection("dashboard");
+    onSwitchRole(newRole);
+  }
+
+  const pageTitle = `${ROLE_TITLES[role]} — ${SECTION_TITLES[activeSection] ?? "Dashboard"}`;
+
   return (
     <div className="app">
       <aside className="sidebar">
@@ -564,19 +973,35 @@ export default function SalesCrm({ role, onSwitchRole, onExit }) {
         </div>
 
         <nav>
-          <button className="nav-item active">Dashboard</button>
-          <button className="nav-item">Doctors</button>
-          <button className="nav-item">Plan</button>
-          <button className="nav-item">Reports</button>
+          <button
+            className={"nav-item" + (activeSection === "dashboard" ? " active" : "")}
+            onClick={() => setActiveSection("dashboard")}
+          > Dashboard
+          </button>
+          <button
+            className={"nav-item" + (activeSection === "doctors" ? " active" : "")}
+            onClick={() => setActiveSection("doctors")}
+          > Doctors
+          </button>
+          <button
+            className={"nav-item" + (activeSection === "plan" ? " active" : "")}
+            onClick={() => setActiveSection("plan")}
+          > Plan
+          </button>
+          <button
+            className={"nav-item" + (activeSection === "reports" ? " active" : "")}
+            onClick={() => setActiveSection("reports")}
+          > Reports
+          </button>
           <div className="nav-heading">SALES CRM</div>
-          <button className={"nav-item" + (role === ROLES.REGIONAL ? " active" : "")} onClick={() => onSwitchRole(ROLES.REGIONAL)}>
+          <button className={"nav-item" + (role === ROLES.REGIONAL ? " active" : "")} onClick={() => handleSwitchRole(ROLES.REGIONAL)}>
             Regional Managers
           </button>
-          <button className={"nav-item" + (role === ROLES.MANAGER ? " active" : "")} onClick={() => onSwitchRole(ROLES.MANAGER)}>
+          <button className={"nav-item" + (role === ROLES.MANAGER ? " active" : "")} onClick={() => handleSwitchRole(ROLES.MANAGER)}>
             Sales Managers
           </button>
-          <button className={"nav-item" + (role === ROLES.EXECUTIVE ? " active" : "")} onClick={() => onSwitchRole(ROLES.EXECUTIVE)}>
-          Sales Executives
+          <button className={"nav-item" + (role === ROLES.EXECUTIVE ? " active" : "")} onClick={() => handleSwitchRole(ROLES.EXECUTIVE)}>
+            Sales Executives
           </button>
           <button className="nav-item" onClick={onExit}>Admin CRM</button>
         </nav>
@@ -586,7 +1011,7 @@ export default function SalesCrm({ role, onSwitchRole, onExit }) {
         <header className="header">
           <div className="title-section">
             <div>
-              <h1>{ROLE_TITLES[role]}</h1>
+              <h1>{pageTitle}</h1>
               <p>Track Performance • Manage Leads • Achieve Targets</p>
             </div>
           </div>
@@ -594,7 +1019,7 @@ export default function SalesCrm({ role, onSwitchRole, onExit }) {
           <div className="header-right">
             <div className="role-switch">
               <label>View As</label>
-              <select value={role} onChange={(e) => onSwitchRole(e.target.value)}>
+              <select value={role} onChange={(e) => handleSwitchRole(e.target.value)}>
                 <option value={ROLES.REGIONAL}>Regional Manager</option>
                 <option value={ROLES.MANAGER}>Sales Manager</option>
                 <option value={ROLES.EXECUTIVE}>Sales Executive</option>
@@ -658,17 +1083,39 @@ export default function SalesCrm({ role, onSwitchRole, onExit }) {
 
         <section className="content">
 
-          {data.loading && <p style={{ color: "#7f8b98" }}>Loading dashboard…</p>}
-          {data.error && <div className="dash-error">{data.error}</div>}
+          {/* ── DASHBOARD ── */}
+          {activeSection === "dashboard" && (
+            <>
+              {data.loading && <p style={{ color: "#7f8b98" }}>Loading dashboard…</p>}
+              {data.error && <div className="dash-error">{data.error}</div>}
+              {!data.loading && !data.error && role === ROLES.EXECUTIVE && (
+                <ExecutiveDashboard data={data} execId={execId} />
+              )}
+              {!data.loading && !data.error && role === ROLES.MANAGER && (
+                <TeamDashboard data={data} region={region || null} scopeLabel="Active team members" />
+              )}
+              {!data.loading && !data.error && role === ROLES.REGIONAL && (
+                <TeamDashboard data={data} region={region || null} scopeLabel="Across all regions" />
+              )}
+            </>
+          )}
 
-          {!data.loading && !data.error && role === ROLES.EXECUTIVE && (
-            <ExecutiveDashboard data={data} execId={execId} />
+          {/* ── REPORTS ── */}
+          {activeSection === "reports" && (
+            <ReportsView data={data} execId={execId} />
           )}
-          {!data.loading && !data.error && role === ROLES.MANAGER && (
-            <TeamDashboard data={data} region={region || null} scopeLabel="Active team members" />
+
+          {/* ── DOCTORS ── */}
+          {activeSection === "doctors" && (
+            <DoctorsView data={data} execId={execId} />
           )}
-          {!data.loading && !data.error && role === ROLES.REGIONAL && (
-            <TeamDashboard data={data} region={region || null} scopeLabel="Across all regions" />
+
+          {/* ── PLAN (placeholder) ── */}
+          {activeSection === "plan" && (
+            <div className="panel" style={{ padding: "2rem", textAlign: "center", color: "var(--muted-foreground)" }}>
+              <h3 style={{ marginBottom: 8 }}>Plan</h3>
+              <p>Territory planning will be available here.</p>
+            </div>
           )}
         </section>
       </main>
@@ -678,7 +1125,6 @@ export default function SalesCrm({ role, onSwitchRole, onExit }) {
           tableKey={currentTableKey}
           record={currentRecord}
           onClose={() => setProfileOpen(false)}
-         
         />
       )}
     </div>
