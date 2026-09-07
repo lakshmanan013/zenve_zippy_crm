@@ -1,8 +1,22 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { fetchList } from "../api.js";
+import {
+  fetchList,
+  TABLE_CONFIG,
+  coerceFieldValue,
+  displayFieldValue,
+  buildRecordPayload,
+  updateRecord,
+} from "../api.js";
 import logo from "../assets/zenve-zippy-logo.png";
 import "./SalesCRM.css";
 
+// Maps each Sales CRM "role" view to the backend table that holds that
+// person's own record, so the profile button knows what to fetch/save.
+const ROLE_TABLE_KEY = {
+  executive: "sales_executives",
+  manager: "sales_managers",
+  regional: "regional_managers",
+};
 
 function Stat({ icon, title, value, text, type }) {
   return (
@@ -115,7 +129,6 @@ function Table({ title, headers, rows }) {
 }
 
 function StatusList({ title, rows }) {
-  // rows: [label, count, pct]
   return (
     <div className="panel">
       <div className="panel-title"><h2>{title}</h2></div>
@@ -131,7 +144,6 @@ function StatusList({ title, rows }) {
 }
 
 function UpcomingList({ title, rows }) {
-  // rows: [name, subtitle, when]
   return (
     <div className="panel">
       <div className="panel-title">
@@ -158,6 +170,8 @@ function UpcomingList({ title, rows }) {
 function useSalesData() {
   const [state, setState] = useState({ loading: true, error: null });
   const [executives, setExecutives] = useState([]);
+  const [salesManagers, setSalesManagers] = useState([]);
+  const [regionalManagers, setRegionalManagers] = useState([]);
   const [coverage, setCoverage] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [alerts, setAlerts] = useState([]);
@@ -168,14 +182,18 @@ function useSalesData() {
     setState({ loading: true, error: null });
     Promise.all([
       fetchList("sales_executives"),
+      fetchList("sales_managers").catch(() => []),
+      fetchList("regional_managers").catch(() => []),
       fetchList("pincode_coverage"),
       fetchList("executive_tasks"),
       fetchList("executive_alerts").catch(() => []),
       fetchList("doctors"),
       fetchList("products"),
     ])
-      .then(([execs, cov, tsk, alr, docs, prods]) => {
+      .then(([execs, mgrs, regs, cov, tsk, alr, docs, prods]) => {
         setExecutives(execs);
+        setSalesManagers(mgrs);
+        setRegionalManagers(regs);
         setCoverage(cov);
         setTasks(tsk);
         setAlerts(alr);
@@ -188,7 +206,165 @@ function useSalesData() {
 
   useEffect(() => { load(); }, [load]);
 
-  return { ...state, executives, coverage, tasks, alerts, doctors, products, reload: load };
+  return {
+    ...state,
+    executives,
+    salesManagers,
+    regionalManagers,
+    coverage,
+    tasks,
+    alerts,
+    doctors,
+    products
+  };
+}
+
+/* =========================================================
+   PROFILE MODAL — view/edit whichever person is selected
+   (sales executive, sales manager, or regional manager).
+   Works for any record, including ones just added from the
+   admin Data tables, since it edits through the same
+   sales_executives / sales_managers / regional_managers
+   endpoints and reloads the live list on save.
+========================================================= */
+
+function ProfileModal({ tableKey, record, onClose, onSaved }) {
+  const config = TABLE_CONFIG[tableKey];
+  const fields = config.fields;
+
+  const [values, setValues] = useState(() => {
+    const initial = {};
+    fields.forEach((f) => {
+      initial[f.key] = displayFieldValue(f, record);
+    });
+    return initial;
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+
+  function handleChange(key, value) {
+    setValues((prev) => ({ ...prev, [key]: value }));
+  }
+
+  async function handleSave(e) {
+    e.preventDefault();
+    setSaving(true);
+    setError(null);
+    try {
+      const changes = {};
+      fields.forEach((f) => {
+        if (f.readOnly) return;
+        changes[f.key] = coerceFieldValue(f, values[f.key]);
+      });
+      const payload = buildRecordPayload(tableKey, record, changes);
+      await updateRecord(tableKey, record.id, payload);
+      await onSaved();
+      onClose();
+    } catch (err) {
+      setError(err.message || "Failed to save profile");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function renderInput(field) {
+    const value = values[field.key];
+    const id = "profile_field_" + field.key;
+
+    if (field.readOnly) {
+      return <input id={id} value={value ?? ""} disabled />;
+    }
+    if (field.type === "bool") {
+      return (
+        <input
+          id={id}
+          type="checkbox"
+          checked={Boolean(value)}
+          onChange={(e) => handleChange(field.key, e.target.checked)}
+        />
+      );
+    }
+    if (field.type === "yesno") {
+      return (
+        <select
+          id={id}
+          value={value === true || value === "Yes" ? "Yes" : "No"}
+          onChange={(e) => handleChange(field.key, e.target.value)}
+        >
+          <option value="Yes">Yes</option>
+          <option value="No">No</option>
+        </select>
+      );
+    }
+    if (field.type === "number") {
+      return (
+        <input
+          id={id}
+          type="number"
+          step="any"
+          value={value ?? ""}
+          required={field.required}
+          onChange={(e) => handleChange(field.key, e.target.value)}
+        />
+      );
+    }
+    if (field.type === "date") {
+      return (
+        <input
+          id={id}
+          type="date"
+          value={value ?? ""}
+          required={field.required}
+          onChange={(e) => handleChange(field.key, e.target.value)}
+        />
+      );
+    }
+    return (
+      <input
+        id={id}
+        value={value ?? ""}
+        required={field.required}
+        onChange={(e) => handleChange(field.key, e.target.value)}
+      />
+    );
+  }
+
+  return (
+    <div
+      className="zzc-modal-overlay"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="zzc-modal">
+        <h2>{record.name || "Profile"}</h2>
+        {error && (
+          <div style={{ background: "#fee2e2", color: "#991b1b", padding: "8px 12px", borderRadius: 8, marginBottom: 10, fontSize: 13 }}>
+            {error}
+          </div>
+        )}
+        <form id="profileForm" className="zzc-modal-form" onSubmit={handleSave}>
+          {fields.map((field) => (
+            <div className="zzc-field" key={field.key}>
+              <label htmlFor={"profile_field_" + field.key}>
+                {field.label || field.key}
+                {field.required ? " *" : ""}
+              </label>
+              {renderInput(field)}
+            </div>
+          ))}
+        </form>
+        <div className="zzc-modal-actions">
+          <button type="button" className="zzc-btn zzc-btn-outline" onClick={onClose} disabled={saving}>
+            Cancel
+          </button>
+          <button type="submit" form="profileForm" className="zzc-btn zzc-btn-primary" disabled={saving}>
+            {saving ? "Saving…" : "Save"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 /* =========================================================
@@ -338,16 +514,43 @@ const ROLE_TITLES = {
 export default function SalesCrm({ role, onSwitchRole, onExit }) {
   const data = useSalesData();
   const [execId, setExecId] = useState(null);
+  const [managerId, setManagerId] = useState(null);
+  const [regionalId, setRegionalId] = useState(null);
   const [region, setRegion] = useState("");
+  const [profileOpen, setProfileOpen] = useState(false);
 
   useEffect(() => {
     if (!execId && data.executives.length) setExecId(data.executives[0].id);
   }, [data.executives, execId]);
 
+  useEffect(() => {
+    if (!managerId && data.salesManagers.length) setManagerId(data.salesManagers[0].id);
+  }, [data.salesManagers, managerId]);
+
+  useEffect(() => {
+    if (!regionalId && data.regionalManagers.length) setRegionalId(data.regionalManagers[0].id);
+  }, [data.regionalManagers, regionalId]);
+
   const regions = useMemo(
     () => [...new Set(data.executives.map((e) => e.region).filter(Boolean))],
     [data.executives]
   );
+
+  // Whichever person is "in the seat" for the current role — this is what
+  // the profile button shows/edits. New records added via the admin Data
+  // tables show up here automatically since they come from live fetchList.
+  const currentTableKey = ROLE_TABLE_KEY[role];
+  const currentRecord =
+    role === ROLES.EXECUTIVE
+      ? data.executives.find((e) => e.id === execId)
+      : role === ROLES.MANAGER
+      ? data.salesManagers.find((m) => m.id === managerId)
+      : data.regionalManagers.find((r) => r.id === regionalId);
+
+  function initialsOf(name) {
+    if (!name) return "?";
+    return name.trim().charAt(0).toUpperCase();
+  }
 
   return (
     <div className="app">
@@ -363,11 +566,8 @@ export default function SalesCrm({ role, onSwitchRole, onExit }) {
         <nav>
           <button className="nav-item active">Dashboard</button>
           <button className="nav-item">Doctors</button>
-          <button className="nav-item">Follow-ups</button>
-          <button className="nav-item">Deals</button>
-          <button className="nav-item">Targets</button>
+          <button className="nav-item">Plan</button>
           <button className="nav-item">Reports</button>
-
           <div className="nav-heading">SALES CRM</div>
           <button className={"nav-item" + (role === ROLES.REGIONAL ? " active" : "")} onClick={() => onSwitchRole(ROLES.REGIONAL)}>
             Regional Managers
@@ -412,9 +612,31 @@ export default function SalesCrm({ role, onSwitchRole, onExit }) {
               </div>
             )}
 
+            {role === ROLES.MANAGER && data.salesManagers.length > 0 && (
+              <div className="role-switch">
+                <label>Manager</label>
+                <select value={managerId ?? ""} onChange={(e) => setManagerId(Number(e.target.value))}>
+                  {data.salesManagers.map((m) => (
+                    <option key={m.id} value={m.id}>{m.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {role === ROLES.REGIONAL && data.regionalManagers.length > 0 && (
+              <div className="role-switch">
+                <label>Regional Manager</label>
+                <select value={regionalId ?? ""} onChange={(e) => setRegionalId(Number(e.target.value))}>
+                  {data.regionalManagers.map((r) => (
+                    <option key={r.id} value={r.id}>{r.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             {(role === ROLES.MANAGER || role === ROLES.REGIONAL) && (
               <div className="role-switch">
-                <label>Region</label>
+                <label>Region filter</label>
                 <select value={region} onChange={(e) => setRegion(e.target.value)}>
                   <option value="">All</option>
                   {regions.map((r) => (
@@ -423,8 +645,14 @@ export default function SalesCrm({ role, onSwitchRole, onExit }) {
                 </select>
               </div>
             )}
-
-            <button className="notification" onClick={data.reload}>↻</button>
+            <button
+              className="profile-avatar-btn"
+              title={currentRecord ? `${currentRecord.name} — view profile` : "No profile selected"}
+              onClick={() => currentRecord && setProfileOpen(true)}
+              disabled={!currentRecord}
+            >
+              {initialsOf(currentRecord?.name)}
+            </button>
           </div>
         </header>
 
@@ -444,6 +672,15 @@ export default function SalesCrm({ role, onSwitchRole, onExit }) {
           )}
         </section>
       </main>
+
+      {profileOpen && currentRecord && (
+        <ProfileModal
+          tableKey={currentTableKey}
+          record={currentRecord}
+          onClose={() => setProfileOpen(false)}
+         
+        />
+      )}
     </div>
   );
 }
