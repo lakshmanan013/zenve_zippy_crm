@@ -1,0 +1,2005 @@
+/* =========================================================
+   ZENVE ZIPPY — SALES CRM DASHBOARD
+   Theme matched to existing ZENVE ZIPPY design system
+========================================================= */
+
+
+/* =========================================================
+   DESIGN TOKENS
+========================================================= */
+
+:root {
+  --radius: .9rem;
+
+  --background: oklch(98.5% .012 95);
+  --foreground: oklch(24% .035 180);
+
+  --card: oklch(100% 0 0);
+  --card-foreground: oklch(24% .035 180);
+
+  --popover: oklch(100% 0 0);
+  --popover-foreground: oklch(24% .035 180);
+
+  --primary: oklch(52% .105 185);
+  --primary-foreground: oklch(99% .01 180);
+
+  --secondary: oklch(94% .03 190);
+  --secondary-foreground: oklch(30% .05 185);
+
+  --muted: oklch(95% .015 120);
+  --muted-foreground: oklch(52% .025 180);
+
+  --accent: oklch(78% .15 62);
+  --accent-foreground: oklch(24% .05 60);
+
+  --destructive: oklch(57.7% .245 27.325);
+  --destructive-foreground: oklch(98.4% .003 247.858);
+
+  --border: oklch(90% .02 180);
+  --input: oklch(90% .02 180);
+
+  --ring: oklch(52% .105 185);
+
+  --chart-1: oklch(52% .105 185);
+  --chart-2: oklch(78% .15 62);
+  --chart-3: oklch(60% .118 184.704);
+  --chart-4: oklch(82.8% .189 84.429);
+  --chart-5: oklch(76.9% .188 70.08);
+
+  --sidebar: oklch(97% .015 185);
+  --sidebar-foreground: oklch(24% .035 180);
+
+  --sidebar-primary: oklch(52% .105 185);
+  --sidebar-primary-foreground: oklch(99% .01 180);
+
+  --sidebar-accent: oklch(94% .03 190);
+  --sidebar-accent-foreground: oklch(30% .05 185);
+
+  --sidebar-border: oklch(90% .02 180);
+  --sidebar-ring: oklch(52% .105 185);
+
+  --gradient-hero:
+    linear-gradient(
+      135deg,
+      oklch(52% .105 185) 0%,
+      oklch(62% .12 165) 55%,
+      oklch(78% .15 62) 100%
+    );
+
+  --shadow-soft:
+    0 10px 30px -12px oklch(24% .035 180 / .25);
+
+  --font-sans:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    "Noto Sans",
+    Arial,
+    sans-serif;
+}
+
+
+/* =========================================================
+   GLOBAL
+========================================================= */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--background);
+  color: var(--foreground);
+  font-size: .875rem;
+  line-height: 1.5;
+}
+
+button,
+input,
+select {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+
+/* =========================================================
+   MAIN APP
+========================================================= */
+
+.app {
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
+  background: var(--background);
+}
+
+
+/* =========================================================
+   SIDEBAR
+========================================================= */
+
+.sidebar {
+  position: relative;
+
+  width: 16rem;
+  height: 100vh;
+
+  flex-shrink: 0;
+
+  border-right: 1px solid var(--border);
+
+  background: var(--card);
+
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  padding: 0;
+}
+
+
+/* =========================================================
+   BRAND
+========================================================= */
+
+.brand {
+  height: 64px;
+
+  display: flex;
+  align-items: center;
+
+  gap: .75rem;
+
+  padding: 1rem;
+
+  border-bottom: 1px solid var(--border);
+
+  background: var(--card);
+
+  position: sticky;
+  top: 0;
+
+  z-index: 10;
+}
+
+.brand-logo {
+  height: 40px;
+  width: 40px;
+
+  border-radius: calc(var(--radius) - 2px);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  overflow: hidden;
+}
+
+.brand-logo img {
+  width: 70%;
+  height: 70%;
+
+  object-fit: contain;
+  object-position: center 27%;
+
+  transform: scale(1.38);
+}
+
+.brand-name {
+  font-size: .875rem;
+  font-weight: 600;
+
+  color: var(--foreground);
+}
+
+.brand-sub {
+  font-size: .75rem;
+
+  color: var(--muted-foreground);
+
+  letter-spacing: .05em;
+}
+
+
+/* =========================================================
+   SIDEBAR NAV
+========================================================= */
+
+.sidebar nav {
+  padding: .75rem;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+
+  width: 100%;
+  min-height: 38px;
+
+  border-radius: calc(var(--radius) - 4px);
+
+  padding: .375rem .625rem;
+
+  margin-bottom: 3px;
+
+  text-align: left;
+
+  font-size: .875rem;
+
+  color: var(--foreground);
+
+  background: transparent;
+
+  border: none;
+
+  transition:
+    background-color .15s ease,
+    color .15s ease;
+}
+
+.nav-item span {
+  width: 26px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  margin-right: 4px;
+
+  font-size: 15px;
+
+  color: var(--muted-foreground);
+}
+
+.nav-item:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.nav-item:hover span {
+  color: var(--accent-foreground);
+}
+
+.nav-item.active {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.nav-item.active span {
+  color: var(--primary-foreground);
+}
+
+
+/* =========================================================
+   SALES CRM HEADING
+========================================================= */
+
+.nav-heading {
+  padding: 0 .5rem .35rem;
+
+  margin-top: 18px;
+
+  font-size: 11px;
+
+  font-weight: 600;
+
+  text-transform: uppercase;
+
+  letter-spacing: .05em;
+
+  color: var(--muted-foreground);
+}
+
+
+/* =========================================================
+   HELP BOX
+========================================================= */
+
+.help-box {
+  position: absolute;
+
+  left: .75rem;
+  right: .75rem;
+  bottom: .75rem;
+
+  display: flex;
+  align-items: center;
+
+  gap: .65rem;
+
+  padding: .65rem;
+
+  border: 1px solid var(--border);
+
+  border-radius: var(--radius);
+
+  background:
+    color-mix(
+      in oklab,
+      var(--secondary) 60%,
+      var(--card)
+    );
+}
+
+.help-circle {
+  width: 32px;
+  height: 32px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  border-radius: 50%;
+
+  background: var(--primary);
+
+  color: var(--primary-foreground);
+
+  font-weight: 700;
+}
+
+.help-box strong {
+  display: block;
+
+  font-size: .75rem;
+}
+
+.help-box small {
+  display: block;
+
+  font-size: .68rem;
+
+  color: var(--muted-foreground);
+}
+
+.help-box > span {
+  margin-left: auto;
+
+  color: var(--primary);
+
+  font-size: 16px;
+}
+
+
+/* =========================================================
+   MAIN
+========================================================= */
+
+.main {
+  flex: 1;
+
+  min-width: 0;
+
+  min-height: 100vh;
+
+  background: var(--background);
+}
+
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.header {
+  min-height: 64px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: .75rem;
+
+  padding: .75rem 1.25rem;
+
+  border-bottom: 1px solid var(--border);
+
+  background: var(--card);
+}
+
+.title-section {
+  display: flex;
+  align-items: center;
+
+  gap: .75rem;
+
+  min-width: 0;
+}
+
+.target-icon {
+  width: 38px;
+  height: 38px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  border-radius: calc(var(--radius) - 3px);
+
+  background: var(--secondary);
+
+  color: var(--primary);
+
+  font-size: 20px;
+}
+
+.title-section h1 {
+  margin: 0;
+
+  font-size: 1.125rem;
+
+  font-weight: 600;
+
+  color: var(--foreground);
+}
+
+.title-section p {
+  margin-top: 1px;
+
+  font-size: .75rem;
+
+  color: var(--muted-foreground);
+}
+
+
+/* =========================================================
+   HEADER RIGHT
+========================================================= */
+
+.header-right {
+  display: flex;
+  align-items: center;
+
+  gap: .5rem;
+
+  flex-wrap: wrap;
+}
+
+.role-switch {
+  display: flex;
+  align-items: center;
+
+  gap: 5px;
+}
+
+.role-switch label {
+  font-size: .7rem;
+
+  color: var(--muted-foreground);
+}
+
+.role-switch select {
+  height: 36px;
+
+  min-width: 130px;
+
+  border-radius: calc(var(--radius) - 4px);
+
+  border: 1px solid var(--border);
+
+  background: var(--background);
+
+  padding: 0 .65rem;
+
+  outline: none;
+
+  font-size: .78rem;
+}
+
+.role-switch select:focus {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+
+.notification {
+  width: 36px;
+  height: 36px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: calc(var(--radius) - 4px);
+
+  border: 1px solid var(--border);
+
+  background: var(--card);
+
+  color: var(--foreground);
+
+  font-size: 17px;
+
+  transition: .15s ease;
+}
+
+.notification:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+
+/* =========================================================
+   CONTENT
+========================================================= */
+
+.content {
+  padding: 1rem;
+}
+
+
+/* =========================================================
+   ROLE NOTICE
+========================================================= */
+
+.role-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 1rem;
+
+  margin-bottom: 1rem;
+
+  padding: .8rem 1rem;
+
+  border: 1px solid var(--border);
+
+  border-radius: var(--radius);
+
+  background: var(--card);
+
+  box-shadow: var(--shadow-soft);
+}
+
+.role-notice strong {
+  display: block;
+
+  font-size: .875rem;
+
+  font-weight: 600;
+}
+
+.role-notice p {
+  margin-top: 2px;
+
+  font-size: .72rem;
+
+  color: var(--muted-foreground);
+}
+
+.role-notice > span {
+  padding: .3rem .6rem;
+
+  border-radius: 999px;
+
+  background: var(--secondary);
+
+  color: var(--primary);
+
+  font-size: .65rem;
+
+  font-weight: 700;
+
+  letter-spacing: .04em;
+}
+
+
+/* =========================================================
+   STATISTICS
+========================================================= */
+
+.stats {
+  display: grid;
+
+  grid-template-columns: repeat(4, 1fr);
+
+  gap: .75rem;
+
+  margin-bottom: .75rem;
+}
+
+.stat-card {
+  display: flex;
+  align-items: center;
+
+  gap: .75rem;
+
+  min-height: 88px;
+
+  padding: .75rem;
+
+  border: 1px solid var(--border);
+
+  border-radius: var(--radius);
+
+  background: var(--card);
+
+  box-shadow: var(--shadow-soft);
+}
+
+.stat-icon {
+  width: 40px;
+  height: 40px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  border-radius: calc(var(--radius) - 3px);
+
+  font-size: 18px;
+}
+
+.stat-icon.blue {
+  background: color-mix(
+    in oklab,
+    var(--primary) 12%,
+    white
+  );
+
+  color: var(--primary);
+}
+
+.stat-icon.green {
+  background: oklch(92% .05 165);
+
+  color: oklch(45% .12 165);
+}
+
+.stat-icon.orange {
+  background: color-mix(
+    in oklab,
+    var(--accent) 22%,
+    white
+  );
+
+  color: oklch(55% .13 62);
+}
+
+.stat-icon.red {
+  background: oklch(94% .035 25);
+
+  color: var(--destructive);
+}
+
+.stat-card span {
+  display: block;
+
+  font-size: 11px;
+
+  text-transform: uppercase;
+
+  letter-spacing: .025em;
+
+  color: var(--muted-foreground);
+}
+
+.stat-card strong {
+  display: block;
+
+  margin-top: 2px;
+
+  font-size: 1.25rem;
+
+  font-weight: 600;
+}
+
+.stat-card small {
+  display: block;
+
+  margin-top: 1px;
+
+  font-size: .7rem;
+
+  color: var(--muted-foreground);
+}
+
+
+/* =========================================================
+   TWO COLUMN SECTIONS
+========================================================= */
+
+.two-columns {
+  display: grid;
+
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+
+  gap: .75rem;
+
+  margin-bottom: .75rem;
+}
+
+
+/* =========================================================
+   PANELS / CARDS
+========================================================= */
+
+.panel {
+  min-width: 0;
+
+  border: 1px solid var(--border);
+
+  border-radius: var(--radius);
+
+  background: var(--card);
+
+  padding: 1rem;
+
+  box-shadow: var(--shadow-soft);
+}
+
+.panel-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  min-height: 25px;
+
+  margin-bottom: .75rem;
+}
+
+.panel-title h2 {
+  margin: 0;
+
+  font-size: .9rem;
+
+  font-weight: 600;
+
+  color: var(--foreground);
+}
+
+
+/* =========================================================
+   CHART LEGEND
+========================================================= */
+
+.legend {
+  display: flex;
+  align-items: center;
+
+  gap: .75rem;
+}
+
+.legend span {
+  display: flex;
+  align-items: center;
+
+  gap: 5px;
+
+  font-size: .7rem;
+
+  color: var(--muted-foreground);
+}
+
+.blue-dot,
+.green-dot,
+.orange-dot,
+.red-dot {
+  width: 7px;
+  height: 7px;
+
+  display: inline-block;
+
+  border-radius: 50%;
+}
+
+.blue-dot {
+  background: var(--chart-1);
+}
+
+.green-dot {
+  background: oklch(55% .12 165);
+}
+
+.orange-dot {
+  background: var(--chart-2);
+}
+
+.red-dot {
+  background: var(--destructive);
+}
+
+
+/* =========================================================
+   BAR CHART
+========================================================= */
+
+.chart {
+  height: 190px;
+
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+
+  gap: 1rem;
+
+  padding: .5rem .75rem 0;
+
+  border-bottom: 1px solid var(--border);
+}
+
+.month {
+  height: 100%;
+
+  flex: 1;
+
+  min-width: 35px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.bars {
+  height: 155px;
+
+  display: flex;
+  align-items: flex-end;
+
+  gap: 4px;
+}
+
+.bar {
+  width: 15px;
+
+  min-height: 2px;
+
+  border-radius: 5px 5px 2px 2px;
+
+  transition: height .25s ease;
+}
+
+.bar.target {
+  background: var(--primary);
+  opacity: .45;
+}
+
+.bar.achieved {
+  background: var(--primary);
+}
+
+.month small {
+  margin-top: .5rem;
+
+  font-size: .68rem;
+
+  color: var(--muted-foreground);
+}
+
+
+/* =========================================================
+   ACHIEVEMENT
+========================================================= */
+
+.achievement {
+  min-height: 190px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 2rem;
+}
+
+
+/* Donut */
+
+.donut {
+  width: 135px;
+  height: 135px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  position: relative;
+
+  border-radius: 50%;
+
+  background:
+    conic-gradient(
+      var(--primary) 0deg,
+      var(--primary) 235deg,
+      var(--secondary) 235deg,
+      var(--secondary) 360deg
+    );
+}
+
+.donut::before {
+  content: "";
+
+  position: absolute;
+
+  width: 103px;
+  height: 103px;
+
+  border-radius: 50%;
+
+  background: var(--card);
+}
+
+.donut > div {
+  position: relative;
+
+  z-index: 1;
+
+  text-align: center;
+}
+
+.donut strong {
+  display: block;
+
+  font-size: 1.4rem;
+
+  font-weight: 600;
+}
+
+.donut span {
+  display: block;
+
+  margin-top: 1px;
+
+  font-size: .68rem;
+
+  color: var(--muted-foreground);
+}
+
+
+/* Achievement list */
+
+.achievement-list {
+  min-width: 150px;
+}
+
+.achievement-list > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 1.25rem;
+
+  padding: .55rem 0;
+
+  border-bottom: 1px solid var(--border);
+}
+
+.achievement-list > div:last-child {
+  border-bottom: none;
+}
+
+.achievement-list span {
+  display: flex;
+  align-items: center;
+
+  gap: 6px;
+
+  font-size: .72rem;
+
+  color: var(--muted-foreground);
+}
+
+.achievement-list strong {
+  font-size: .8rem;
+
+  font-weight: 600;
+}
+
+
+/* =========================================================
+   PERFORMERS
+========================================================= */
+
+.performer {
+  display: flex;
+  align-items: center;
+
+  gap: .65rem;
+
+  padding: .6rem 0;
+
+  border-bottom: 1px solid var(--border);
+}
+
+.performer:last-child {
+  border-bottom: none;
+}
+
+.rank {
+  width: 20px;
+
+  text-align: center;
+
+  font-size: .7rem;
+
+  color: var(--muted-foreground);
+}
+
+.person-avatar {
+  width: 34px;
+  height: 34px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  border-radius: 50%;
+
+  background: var(--secondary);
+
+  color: var(--primary);
+
+  font-size: .75rem;
+
+  font-weight: 600;
+}
+
+.person {
+  min-width: 0;
+
+  flex: 1;
+}
+
+.person strong {
+  display: block;
+
+  font-size: .75rem;
+
+  font-weight: 600;
+
+  white-space: nowrap;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+}
+
+.person small {
+  display: block;
+
+  font-size: .67rem;
+
+  color: var(--muted-foreground);
+
+  white-space: nowrap;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+}
+
+.performance {
+  width: 115px;
+
+  display: flex;
+  align-items: center;
+
+  gap: .5rem;
+}
+
+.performance .progress {
+  flex: 1;
+}
+
+.performance > strong {
+  width: 35px;
+
+  text-align: right;
+
+  font-size: .68rem;
+}
+
+
+/* =========================================================
+   PROGRESS
+========================================================= */
+
+.progress {
+  height: 6px;
+
+  overflow: hidden;
+
+  border-radius: 999px;
+
+  background: var(--secondary);
+}
+
+.progress > div {
+  height: 100%;
+
+  border-radius: inherit;
+
+  background: var(--primary);
+}
+
+
+/* =========================================================
+   TASK STATUS
+========================================================= */
+
+.lead-row {
+  display: grid;
+
+  grid-template-columns: 85px minmax(80px, 1fr) 35px;
+
+  align-items: center;
+
+  gap: .65rem;
+
+  padding: .65rem 0;
+
+  border-bottom: 1px solid var(--border);
+}
+
+.lead-row:last-child {
+  border-bottom: none;
+}
+
+.lead-row strong {
+  font-size: .72rem;
+
+  font-weight: 500;
+}
+
+.lead-row > span {
+  font-size: .7rem;
+
+  color: var(--muted-foreground);
+
+  text-align: right;
+}
+
+.lead-progress {
+  height: 7px;
+
+  overflow: hidden;
+
+  border-radius: 999px;
+
+  background: var(--secondary);
+}
+
+.lead-progress > div {
+  height: 100%;
+
+  border-radius: inherit;
+
+  background: var(--primary);
+}
+
+
+/* =========================================================
+   UPCOMING TASKS
+========================================================= */
+
+.followup {
+  display: flex;
+  align-items: center;
+
+  gap: .65rem;
+
+  padding: .65rem 0;
+
+  border-bottom: 1px solid var(--border);
+}
+
+.followup:last-child {
+  border-bottom: none;
+}
+
+.followup-info {
+  min-width: 0;
+
+  flex: 1;
+}
+
+.followup-info strong {
+  display: block;
+
+  font-size: .75rem;
+
+  font-weight: 600;
+
+  white-space: nowrap;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+}
+
+.followup-info small {
+  display: block;
+
+  font-size: .67rem;
+
+  color: var(--muted-foreground);
+
+  white-space: nowrap;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+}
+
+.followup > span {
+  font-size: .68rem;
+
+  color: var(--muted-foreground);
+
+  white-space: nowrap;
+}
+
+
+/* =========================================================
+   TABLE
+========================================================= */
+
+.table-panel {
+  overflow-x: auto;
+}
+
+.table-panel table {
+  width: 100%;
+
+  border-collapse: collapse;
+
+  font-size: .75rem;
+}
+
+.table-panel thead {
+  background:
+    color-mix(
+      in oklab,
+      var(--muted) 60%,
+      transparent
+    );
+}
+
+.table-panel th {
+  padding: .55rem .65rem;
+
+  border-bottom: 1px solid var(--border);
+
+  text-align: left;
+
+  white-space: nowrap;
+
+  font-size: 10px;
+
+  font-weight: 600;
+
+  text-transform: uppercase;
+
+  letter-spacing: .025em;
+
+  color: var(--muted-foreground);
+}
+
+.table-panel td {
+  padding: .65rem;
+
+  border-bottom: 1px solid var(--border);
+
+  white-space: nowrap;
+}
+
+.table-panel tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table-panel tbody tr:hover {
+  background: var(--secondary);
+}
+
+
+/* =========================================================
+   ERROR
+========================================================= */
+
+.dash-error {
+  margin-bottom: 1rem;
+
+  padding: .7rem .85rem;
+
+  border: 1px solid
+    color-mix(
+      in oklab,
+      var(--destructive) 35%,
+      transparent
+    );
+
+  border-radius: calc(var(--radius) - 3px);
+
+  background:
+    color-mix(
+      in oklab,
+      var(--destructive) 7%,
+      var(--card)
+    );
+
+  color: var(--destructive);
+
+  font-size: .75rem;
+}
+
+
+/* =========================================================
+   OLD SALES CRM CLASSES
+   Kept so existing pages continue working
+========================================================= */
+
+.sales-crm-page {
+  min-height: 100vh;
+
+  width: 100%;
+
+  margin: 0;
+
+  padding: 0;
+
+  background: var(--background);
+}
+
+.sales-crm-header {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 1rem;
+
+  flex-wrap: wrap;
+
+  padding: .75rem 1.25rem;
+
+  border-bottom: 1px solid var(--border);
+
+  background: var(--card);
+}
+
+.sales-crm-brand {
+  display: flex;
+
+  align-items: center;
+
+  gap: .75rem;
+}
+
+.sales-crm-logo {
+  width: 40px;
+  height: 40px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  border-radius: calc(var(--radius) - 2px);
+
+  overflow: hidden;
+}
+
+.sales-crm-logo img {
+  width: 100%;
+  height: 100%;
+
+  object-fit: contain;
+}
+
+.sales-crm-header h1 {
+  margin: 0;
+
+  font-size: 1.125rem;
+
+  font-weight: 600;
+}
+
+.sales-crm-actions {
+  display: flex;
+
+  align-items: center;
+
+  gap: .5rem;
+
+  flex-wrap: wrap;
+}
+
+.sales-crm-select {
+  height: 36px;
+
+  border-radius: calc(var(--radius) - 4px);
+
+  border: 1px solid var(--border);
+
+  padding: 0 .65rem;
+
+  background: var(--background);
+}
+
+.sales-crm-error {
+  margin-bottom: 1rem;
+}
+
+
+/* =========================================================
+   OLD STAT CARDS
+========================================================= */
+
+.sales-crm-stats {
+  display: grid;
+
+  grid-template-columns: repeat(5, 1fr);
+
+  gap: .75rem;
+
+  padding: .75rem;
+
+  border-bottom: 1px solid var(--border);
+
+  background:
+    color-mix(
+      in oklab,
+      var(--muted) 40%,
+      transparent
+    );
+}
+
+.sales-stat-card {
+  min-height: 74px;
+
+  padding: .75rem;
+
+  border: 1px solid var(--border);
+
+  border-radius: var(--radius);
+
+  background: var(--card);
+}
+
+.sales-stat-label {
+  font-size: 11px;
+
+  font-weight: 600;
+
+  text-transform: uppercase;
+
+  letter-spacing: .025em;
+
+  color: var(--muted-foreground);
+}
+
+.sales-stat-value {
+  margin-top: 4px;
+
+  font-size: 1.125rem;
+
+  font-weight: 600;
+}
+
+
+/* =========================================================
+   TABS
+========================================================= */
+
+.sales-crm-tabs {
+  display: flex;
+
+  align-items: center;
+
+  gap: .5rem;
+
+  padding: .6rem 1.25rem;
+
+  border-bottom: 1px solid var(--border);
+
+  background: var(--card);
+}
+
+.sales-crm-tab {
+  border: none;
+
+  background: transparent;
+
+  color: var(--foreground);
+
+  border-radius: calc(var(--radius) - 3px);
+
+  padding: .5rem .75rem;
+
+  font-size: .875rem;
+
+  cursor: pointer;
+}
+
+.sales-crm-tab:hover {
+  background: var(--accent);
+
+  color: var(--accent-foreground);
+}
+
+.sales-crm-tab.active {
+  background: var(--primary);
+
+  color: var(--primary-foreground);
+
+  font-weight: 600;
+}
+
+
+/* =========================================================
+   OLD CRM CARD
+========================================================= */
+
+.sales-crm-card {
+  border: 1px solid var(--border);
+
+  border-radius: var(--radius);
+
+  background: var(--card);
+
+  padding: 1rem;
+
+  margin: 1rem;
+}
+
+.sales-crm-card h3 {
+  font-size: .9rem;
+
+  font-weight: 600;
+
+  margin: 0 0 .75rem;
+}
+
+
+/* =========================================================
+   TASK FORM
+========================================================= */
+
+.sales-task-form {
+  display: flex;
+
+  align-items: center;
+
+  gap: .6rem;
+
+  flex-wrap: wrap;
+}
+
+.sales-task-title-input {
+  flex: 1 1 260px;
+}
+
+.sales-task-form input,
+.sales-task-form select {
+  height: 40px;
+
+  border-radius: calc(var(--radius) - 4px);
+
+  border: 1px solid var(--border);
+
+  padding: 0 .75rem;
+
+  background: var(--background);
+
+  outline: none;
+}
+
+.sales-task-form input:focus,
+.sales-task-form select:focus {
+  outline: 2px solid var(--ring);
+
+  outline-offset: 1px;
+}
+
+
+/* =========================================================
+   TASK LIST
+========================================================= */
+
+.sales-task-list {
+  display: flex;
+
+  flex-direction: column;
+}
+
+.sales-task-title {
+  font-weight: 600;
+
+  margin: 0 0 2px;
+}
+
+.sales-task-status-pills {
+  display: flex;
+
+  gap: 6px;
+}
+
+.sales-status-pill {
+  border: 1px solid var(--border);
+
+  background: var(--card);
+
+  color: var(--foreground);
+
+  border-radius: 999px;
+
+  padding: 6px 14px;
+
+  font-size: 12px;
+
+  cursor: pointer;
+}
+
+.sales-status-pill:hover {
+  background: var(--accent);
+}
+
+.sales-status-pill.active {
+  background: var(--primary);
+
+  border-color: var(--primary);
+
+  color: var(--primary-foreground);
+
+  font-weight: 600;
+}
+
+.sales-task-row {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 10px;
+
+  padding: 14px;
+
+  margin-bottom: 9px;
+
+  border: 1px solid var(--border);
+
+  border-radius: var(--radius);
+
+  background: var(--card);
+
+  flex-wrap: wrap;
+}
+
+
+/* =========================================================
+   COVERAGE
+========================================================= */
+
+.sales-coverage-grid {
+  display: grid;
+
+  grid-template-columns: 1fr;
+
+  gap: .75rem;
+
+  margin-bottom: .75rem;
+}
+
+.sales-coverage-grid .sales-crm-card {
+  margin-bottom: 0;
+}
+
+.sales-pincode-pills {
+  display: flex;
+
+  flex-wrap: wrap;
+
+  gap: .5rem;
+}
+
+
+/* =========================================================
+   SALES CRM DROPDOWN
+========================================================= */
+
+.zzc-sales-menu-wrap {
+  position: relative;
+
+  display: inline-block;
+}
+
+.zzc-caret {
+  font-size: 10px;
+
+  margin-left: 6px;
+
+  opacity: .7;
+}
+
+.zzc-sales-menu {
+  position: absolute;
+
+  top: 100%;
+
+  left: 0;
+
+  margin-top: 6px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 4px;
+
+  min-width: 170px;
+
+  padding: 6px;
+
+  background: var(--card);
+
+  border: 1px solid var(--border);
+
+  border-radius: calc(var(--radius) - 3px);
+
+  box-shadow: var(--shadow-soft);
+
+  z-index: 999;
+}
+
+.zzc-sales-menu button {
+  width: 100%;
+
+  padding: 8px 12px;
+
+  border: none;
+
+  border-radius: 6px;
+
+  background: transparent;
+
+  color: var(--foreground);
+
+  text-align: left;
+
+  font-size: 14px;
+
+  cursor: pointer;
+
+  white-space: nowrap;
+
+  transition:
+    background-color .15s ease,
+    color .15s ease;
+}
+
+.zzc-sales-menu button:hover {
+  background: var(--accent);
+
+  color: var(--accent-foreground);
+}
+
+
+/* =========================================================
+   SCROLLBAR
+========================================================= */
+
+.sidebar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: #808080;
+
+  border-radius: 8px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: #626262;
+}
+
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (max-width: 1100px) {
+
+  .sidebar {
+    width: 14rem;
+  }
+
+  .stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .two-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .header {
+    padding: .75rem 1rem;
+  }
+
+  .content {
+    padding: .85rem;
+  }
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 700px) {
+
+  .app {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    height: auto;
+
+    position: relative;
+
+    border-right: none;
+
+    border-bottom: 1px solid var(--border);
+
+    overflow: visible;
+  }
+
+  .brand {
+    position: relative;
+  }
+
+  .sidebar nav {
+    display: grid;
+
+    grid-template-columns: repeat(2, 1fr);
+
+    gap: 4px;
+  }
+
+  .nav-heading {
+    grid-column: 1 / -1;
+  }
+
+  .help-box {
+    display: none;
+  }
+
+  .main {
+    width: 100%;
+  }
+
+  .header {
+    align-items: flex-start;
+
+    flex-direction: column;
+  }
+
+  .header-right {
+    width: 100%;
+
+    justify-content: flex-start;
+  }
+
+  .role-switch {
+    flex: 1;
+  }
+
+  .role-switch select {
+    flex: 1;
+  }
+
+  .stats {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .role-notice {
+    align-items: flex-start;
+  }
+}
+
+
+/* =========================================================
+   SMALL MOBILE
+========================================================= */
+
+@media (max-width: 480px) {
+
+  .sidebar nav {
+    grid-template-columns: 1fr;
+  }
+
+  .stats {
+    grid-template-columns: 1fr;
+  }
+
+  .title-section h1 {
+    font-size: 1rem;
+  }
+
+  .header-right {
+    flex-direction: column;
+
+    align-items: stretch;
+  }
+
+  .role-switch {
+    width: 100%;
+  }
+
+  .notification {
+    width: 100%;
+  }
+
+  .role-notice {
+    flex-direction: column;
+  }
+
+  .achievement {
+    flex-direction: column;
+
+    gap: 1rem;
+  }
+
+  .achievement-list {
+    width: 100%;
+  }
+
+  .chart {
+    padding-left: 2px;
+    padding-right: 2px;
+
+    gap: 4px;
+  }
+
+  .bar {
+    width: 11px;
+  }
+
+  .performance {
+    width: 90px;
+  }
+
+  .panel {
+    padding: .75rem;
+  }
+
+  .table-panel {
+    overflow-x: auto;
+  }
+
+  .table-panel table {
+    min-width: 430px;
+  }
+}
