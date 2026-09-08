@@ -10,14 +10,18 @@ import {
 import logo from "../assets/zenve-zippy-logo.png";
 import "./SalesCRM.css";
 
-// Maps each Sales CRM "role" view to the backend table that holds that
-// person's own record, so the profile button knows what to fetch/save.
+/* ─────────────────────────────────────────────────────────
+   ROLE → TABLE KEY MAP
+───────────────────────────────────────────────────────── */
 const ROLE_TABLE_KEY = {
   executive: "sales_executives",
   manager: "sales_managers",
   regional: "regional_managers",
 };
 
+/* ─────────────────────────────────────────────────────────
+   SMALL SHARED UI COMPONENTS
+───────────────────────────────────────────────────────── */
 function Stat({ icon, title, value, text, type }) {
   return (
     <div className="stat-card">
@@ -33,23 +37,21 @@ function Stat({ icon, title, value, text, type }) {
 
 function Chart({ title, categories, targets, achieved }) {
   const max = Math.max(1, ...targets, ...achieved);
-
   return (
     <div className="panel">
       <div className="panel-title">
         <h2>{title}</h2>
         <div className="legend">
-          <span><i className="blue-dot"></i>Target</span>
-          <span><i className="green-dot"></i>Achieved</span>
+          <span><i className="blue-dot" />Target</span>
+          <span><i className="green-dot" />Achieved</span>
         </div>
       </div>
-
       <div className="chart">
-        {categories.map((cat, index) => (
+        {categories.map((cat, i) => (
           <div className="month" key={cat}>
             <div className="bars">
-              <div className="bar target" style={{ height: `${(targets[index] / max) * 145}px` }}></div>
-              <div className="bar achieved" style={{ height: `${(achieved[index] / max) * 145}px` }}></div>
+              <div className="bar target" style={{ height: `${(targets[i] / max) * 145}px` }} />
+              <div className="bar achieved" style={{ height: `${(achieved[i] / max) * 145}px` }} />
             </div>
             <small>{cat}</small>
           </div>
@@ -71,9 +73,9 @@ function Achievement({ percentage, achieved, progress, pending }) {
           </div>
         </div>
         <div className="achievement-list">
-          <div><span><i className="green-dot"></i>Achieved</span><strong>{achieved}</strong></div>
-          <div><span><i className="orange-dot"></i>In Progress</span><strong>{progress}</strong></div>
-          <div><span><i className="red-dot"></i>Pending</span><strong>{pending}</strong></div>
+          <div><span><i className="green-dot" />Achieved</span><strong>{achieved}</strong></div>
+          <div><span><i className="orange-dot" />In Progress</span><strong>{progress}</strong></div>
+          <div><span><i className="red-dot" />Pending</span><strong>{pending}</strong></div>
         </div>
       </div>
     </div>
@@ -96,7 +98,7 @@ function Performers({ title, people }) {
               <small>{person[1]}</small>
             </div>
             <div className="performance">
-              <div className="progress"><div style={{ width: person[2] }}></div></div>
+              <div className="progress"><div style={{ width: person[2] }} /></div>
               <strong>{person[2]}</strong>
             </div>
           </div>
@@ -106,14 +108,12 @@ function Performers({ title, people }) {
   );
 }
 
-function Table({ title, headers, rows }) {
+function DashTable({ title, headers, rows }) {
   return (
     <div className="panel table-panel">
       <div className="panel-title"><h2>{title}</h2></div>
       <table>
-        <thead>
-          <tr>{headers.map((h) => <th key={h}>{h}</th>)}</tr>
-        </thead>
+        <thead><tr>{headers.map((h) => <th key={h}>{h}</th>)}</tr></thead>
         <tbody>
           {rows.length === 0 ? (
             <tr><td colSpan={headers.length} style={{ color: "#7f8b98" }}>No data yet</td></tr>
@@ -135,7 +135,7 @@ function StatusList({ title, rows }) {
       {rows.map((r) => (
         <div className="lead-row" key={r[0]}>
           <strong>{r[0]}</strong>
-          <div className="lead-progress"><div style={{ width: r[2] }}></div></div>
+          <div className="lead-progress"><div style={{ width: r[2] }} /></div>
           <span>{r[1]}</span>
         </div>
       ))}
@@ -146,9 +146,7 @@ function StatusList({ title, rows }) {
 function UpcomingList({ title, rows }) {
   return (
     <div className="panel">
-      <div className="panel-title">
-        <h2>{title}</h2>
-      </div>
+      <div className="panel-title"><h2>{title}</h2></div>
       {rows.length === 0 ? (
         <p style={{ color: "#7f8b98", fontSize: 13 }}>Nothing coming up.</p>
       ) : (
@@ -167,6 +165,9 @@ function UpcomingList({ title, rows }) {
   );
 }
 
+/* ─────────────────────────────────────────────────────────
+   DATA HOOK
+───────────────────────────────────────────────────────── */
 function useSalesData() {
   const [state, setState] = useState({ loading: true, error: null });
   const [executives, setExecutives] = useState([]);
@@ -206,44 +207,25 @@ function useSalesData() {
 
   useEffect(() => { load(); }, [load]);
 
-  return {
-    ...state,
-    executives,
-    salesManagers,
-    regionalManagers,
-    coverage,
-    tasks,
-    alerts,
-    doctors,
-    products
-  };
+  return { ...state, executives, salesManagers, regionalManagers, coverage, tasks, alerts, doctors, products, reload: load };
 }
 
-/* =========================================================
-   PROFILE MODAL — view/edit whichever person is selected
-   (sales executive, sales manager, or regional manager).
-   Works for any record, including ones just added from the
-   admin Data tables, since it edits through the same
-   sales_executives / sales_managers / regional_managers
-   endpoints and reloads the live list on save.
-========================================================= */
-
+/* ─────────────────────────────────────────────────────────
+   PROFILE MODAL
+───────────────────────────────────────────────────────── */
 function ProfileModal({ tableKey, record, onClose, onSaved }) {
   const config = TABLE_CONFIG[tableKey];
   const fields = config.fields;
-
   const [values, setValues] = useState(() => {
-    const initial = {};
-    fields.forEach((f) => {
-      initial[f.key] = displayFieldValue(f, record);
-    });
-    return initial;
+    const init = {};
+    fields.forEach((f) => { init[f.key] = displayFieldValue(f, record); });
+    return init;
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
   function handleChange(key, value) {
-    setValues((prev) => ({ ...prev, [key]: value }));
+    setValues((p) => ({ ...p, [key]: value }));
   }
 
   async function handleSave(e) {
@@ -258,7 +240,7 @@ function ProfileModal({ tableKey, record, onClose, onSaved }) {
       });
       const payload = buildRecordPayload(tableKey, record, changes);
       await updateRecord(tableKey, record.id, payload);
-      await onSaved();
+      if (onSaved) await onSaved();
       onClose();
     } catch (err) {
       setError(err.message || "Failed to save profile");
@@ -269,97 +251,211 @@ function ProfileModal({ tableKey, record, onClose, onSaved }) {
 
   function renderInput(field) {
     const value = values[field.key];
-    const id = "profile_field_" + field.key;
-
-    if (field.readOnly) {
-      return <input id={id} value={value ?? ""} disabled />;
-    }
-    if (field.type === "bool") {
-      return (
-        <input
-          id={id}
-          type="checkbox"
-          checked={Boolean(value)}
-          onChange={(e) => handleChange(field.key, e.target.checked)}
-        />
-      );
-    }
-    if (field.type === "yesno") {
-      return (
-        <select
-          id={id}
-          value={value === true || value === "Yes" ? "Yes" : "No"}
-          onChange={(e) => handleChange(field.key, e.target.value)}
-        >
-          <option value="Yes">Yes</option>
-          <option value="No">No</option>
-        </select>
-      );
-    }
-    if (field.type === "number") {
-      return (
-        <input
-          id={id}
-          type="number"
-          step="any"
-          value={value ?? ""}
-          required={field.required}
-          onChange={(e) => handleChange(field.key, e.target.value)}
-        />
-      );
-    }
-    if (field.type === "date") {
-      return (
-        <input
-          id={id}
-          type="date"
-          value={value ?? ""}
-          required={field.required}
-          onChange={(e) => handleChange(field.key, e.target.value)}
-        />
-      );
-    }
-    return (
-      <input
-        id={id}
-        value={value ?? ""}
-        required={field.required}
-        onChange={(e) => handleChange(field.key, e.target.value)}
-      />
+    const id = "pf_" + field.key;
+    if (field.readOnly) return <input id={id} value={value ?? ""} disabled />;
+    if (field.type === "bool") return <input id={id} type="checkbox" checked={Boolean(value)} onChange={(e) => handleChange(field.key, e.target.checked)} />;
+    if (field.type === "yesno") return (
+      <select id={id} value={value === true || value === "Yes" ? "Yes" : "No"} onChange={(e) => handleChange(field.key, e.target.value)}>
+        <option value="Yes">Yes</option><option value="No">No</option>
+      </select>
     );
+    if (field.type === "number") return <input id={id} type="number" step="any" value={value ?? ""} required={field.required} onChange={(e) => handleChange(field.key, e.target.value)} />;
+    if (field.type === "date") return <input id={id} type="date" value={value ?? ""} required={field.required} onChange={(e) => handleChange(field.key, e.target.value)} />;
+    return <input id={id} value={value ?? ""} required={field.required} onChange={(e) => handleChange(field.key, e.target.value)} />;
   }
 
   return (
-    <div
-      className="zzc-modal-overlay"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
+    <div className="zzc-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="zzc-modal">
         <h2>{record.name || "Profile"}</h2>
-        {error && (
-          <div style={{ background: "#fee2e2", color: "#991b1b", padding: "8px 12px", borderRadius: 8, marginBottom: 10, fontSize: 13 }}>
-            {error}
-          </div>
-        )}
+        {error && <div className="rpt-call-error">{error}</div>}
         <form id="profileForm" className="zzc-modal-form" onSubmit={handleSave}>
           {fields.map((field) => (
             <div className="zzc-field" key={field.key}>
-              <label htmlFor={"profile_field_" + field.key}>
-                {field.label || field.key}
-                {field.required ? " *" : ""}
-              </label>
+              <label htmlFor={"pf_" + field.key}>{field.label || field.key}{field.required ? " *" : ""}</label>
               {renderInput(field)}
             </div>
           ))}
         </form>
         <div className="zzc-modal-actions">
-          <button type="button" className="zzc-btn zzc-btn-outline" onClick={onClose} disabled={saving}>
-            Cancel
-          </button>
-          <button type="submit" form="profileForm" className="zzc-btn zzc-btn-primary" disabled={saving}>
-            {saving ? "Saving…" : "Save"}
+          <button type="button" className="zzc-btn zzc-btn-outline" onClick={onClose} disabled={saving}>Cancel</button>
+          <button type="submit" form="profileForm" className="zzc-btn zzc-btn-primary" disabled={saving}>{saving ? "Saving…" : "Save"}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────
+   PRE-CALL MODAL
+───────────────────────────────────────────────────────── */
+function PreCallModal({ visit, onClose, onSave }) {
+  const [brands, setBrands] = useState(visit.brands === "—" ? "" : visit.brands);
+  const [campaign, setCampaign] = useState(visit.campaign === "—" ? "" : visit.campaign);
+  const [objective, setObjective] = useState(visit.preCallObjective || "");
+  const [notes, setNotes] = useState(visit.preCallNotes || "");
+
+  function handleSave(e) {
+    e.preventDefault();
+    onSave({ ...visit, brands: brands || "—", campaign: campaign || "—", preCallObjective: objective, preCallNotes: notes });
+    onClose();
+  }
+
+  return (
+    <div className="zzc-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="zzc-modal rpt-call-modal">
+        <div className="rpt-call-modal-header">
+          <div>
+            <h2>Pre Call — {visit.doctorName}</h2>
+            <p className="rpt-call-modal-sub">Sno: {visit.advaitNo} · <span className="rpt-doc-tag">{visit.tag}</span></p>
+          </div>
+          <button className="rpt-call-close" onClick={onClose} type="button">✕</button>
+        </div>
+
+        <form id="preCallForm" className="rpt-call-form" onSubmit={handleSave}>
+          <div className="rpt-call-row">
+            <div className="rpt-call-field">
+              <label>Product</label>
+              <input
+                value={brands}
+                onChange={(e) => setBrands(e.target.value)}
+                placeholder="e.g. Nebicard, Losar"
+                required
+              />
+            </div>
+            <div className="rpt-call-field">
+              <label>Obective</label>
+              <input
+                value={campaign}
+                onChange={(e) => setCampaign(e.target.value)}
+                placeholder="e.g. HeartBeat 2026"
+              />
+            </div>
+          </div>
+          <div className="rpt-call-field rpt-call-field-full">
+            <label>Call Objective</label>
+            <input
+              value={objective}
+              onChange={(e) => setObjective(e.target.value)}
+              placeholder="What do you plan to discuss?"
+            />
+          </div>
+          <div className="rpt-call-field rpt-call-field-full">
+            <label>Pre-Call Notes</label>
+            <textarea
+              rows={3}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Doctor background, previous prescriptions, talking points…"
+            />
+          </div>
+        </form>
+
+        <div className="rpt-call-modal-footer">
+          <button type="button" className="rpt-btn-outline" onClick={onClose}>Cancel</button>
+          <button type="submit" form="preCallForm" className="rpt-btn-primary">Save Pre Call</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────
+   POST-CALL MODAL
+───────────────────────────────────────────────────────── */
+function PostCallModal({ visit, onClose, onSave }) {
+  const [brands, setBrands] = useState(visit.brands === "—" ? "" : visit.brands);
+  const [campaign, setCampaign] = useState(visit.campaign === "—" ? "" : visit.campaign);
+  const [outcome, setOutcome] = useState(visit.callOutcome || "Interested");
+  const [prescriptions, setPrescriptions] = useState(visit.prescriptions || "");
+  const [feedback, setFeedback] = useState(visit.feedback || "");
+  const [nextVisit, setNextVisit] = useState(visit.nextVisitDate || "");
+
+  function handleSave(e) {
+    e.preventDefault();
+    onSave({
+      ...visit,
+      brands: brands || "—",
+      campaign: campaign || "—",
+      callOutcome: outcome,
+      prescriptions,
+      feedback,
+      nextVisitDate: nextVisit,
+      status: "Reported",
+    });
+    onClose();
+  }
+
+  return (
+    <div className="zzc-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="zzc-modal rpt-call-modal">
+        <div className="rpt-call-modal-header">
+          <div>
+            <h2>Post Call — {visit.doctorName}</h2>
+            <p className="rpt-call-modal-sub">Sno: {visit.advaitNo} · <span className="rpt-doc-tag">{visit.tag}</span></p>
+          </div>
+          <button className="rpt-call-close" onClick={onClose} type="button">✕</button>
+        </div>
+
+        <form id="postCallForm" className="rpt-call-form" onSubmit={handleSave}>
+          <div className="rpt-call-row">
+            <div className="rpt-call-field">
+              <label>Product</label>
+              <input
+                value={brands}
+                onChange={(e) => setBrands(e.target.value)}
+                placeholder="e.g. Nebicard, Losar"
+                required
+              />
+            </div>
+            <div className="rpt-call-field">
+              <label>Objective</label>
+              <input
+                value={campaign}
+                onChange={(e) => setCampaign(e.target.value)}
+                placeholder="e.g. HeartBeat 2026"
+              />
+            </div>
+          </div>
+          <div className="rpt-call-row">
+            <div className="rpt-call-field">
+              <label>Call Outcome *</label>
+              <select value={outcome} onChange={(e) => setOutcome(e.target.value)} required>
+                <option>Interested</option>
+                <option>Prescribed</option>
+                <option>Needs Follow-up</option>
+                <option>Not Available</option>
+                <option>Rejected</option>
+              </select>
+            </div>
+            <div className="rpt-call-field">
+              <label>Next Visit Date</label>
+              <input type="date" value={nextVisit} onChange={(e) => setNextVisit(e.target.value)} />
+            </div>
+          </div>
+          <div className="rpt-call-field rpt-call-field-full">
+            <label>Prescriptions / Products Discussed</label>
+            <input
+              value={prescriptions}
+              onChange={(e) => setPrescriptions(e.target.value)}
+              placeholder="e.g. Nebicard 5mg — 10 strips/month"
+            />
+          </div>
+          <div className="rpt-call-field rpt-call-field-full">
+            <label>Doctor Feedback / Observations</label>
+            <textarea
+              rows={3}
+              value={feedback}
+              onChange={(e) => setFeedback(e.target.value)}
+              placeholder="What did the doctor say? Any objections or requests?"
+            />
+          </div>
+        </form>
+
+        <div className="rpt-call-modal-footer">
+          <button type="button" className="rpt-btn-outline" onClick={onClose}>Cancel</button>
+          <button type="submit" form="postCallForm" className="rpt-btn-primary rpt-btn-post-submit">
+            ✓ Mark as Reported
           </button>
         </div>
       </div>
@@ -367,221 +463,255 @@ function ProfileModal({ tableKey, record, onClose, onSaved }) {
   );
 }
 
-/* =========================================================
-   EXECUTIVE DASHBOARD (real data)
-========================================================= */
+/* ─────────────────────────────────────────────────────────
+   EDIT CALL MODAL (same shape as post call but pre-filled)
+───────────────────────────────────────────────────────── */
+function EditCallModal({ visit, onClose, onSave }) {
+  return <PostCallModal visit={visit} onClose={onClose} onSave={onSave} />;
+}
 
-function ExecutiveDashboard({ data, execId }) {
-  const { executives, coverage, tasks, doctors, products } = data;
-  const exec = executives.find((e) => e.id === execId) || executives[0];
-
-  const myPincodes = new Set(coverage.filter((c) => c.executive_id === exec?.id).map((c) => c.pincode));
-  const myTasks = tasks.filter((t) => !t.pincode || myPincodes.has(t.pincode));
-  const done = myTasks.filter((t) => t.status === "done").length;
-  const inProgress = myTasks.filter((t) => t.status === "in progress").length;
-  const open = myTasks.length - done - inProgress;
-  const donePct = myTasks.length > 0 ? Math.round((done / myTasks.length) * 100) : 0;
-
-  const PRIORITIES = ["low", "medium", "high"];
-  const totals = PRIORITIES.map((p) => myTasks.filter((t) => String(t.priority || "").toLowerCase() === p).length);
-  const doneByPriority = PRIORITIES.map((p) => myTasks.filter((t) => String(t.priority || "").toLowerCase() === p && t.status === "done").length);
-
-  const pincodeRows = [...myPincodes].map((pc) => ({
-    pc,
-    doctorCount: doctors.filter((d) => d.pincode === pc).length,
-    productCount: products.filter((p) => p.pincode === pc).length,
-  }));
-  const maxScore = Math.max(1, ...pincodeRows.map((r) => r.doctorCount + r.productCount));
-  const topPincodes = [...pincodeRows]
-    .sort((a, b) => b.doctorCount + b.productCount - (a.doctorCount + a.productCount))
-    .slice(0, 3)
-    .map((r) => [r.pc, `${r.doctorCount} doctors · ${r.productCount} products`, `${Math.round(((r.doctorCount + r.productCount) / maxScore) * 100)}%`]);
-
-  const statusRows = [
-    ["Open", open, myTasks.length ? `${Math.round((open / myTasks.length) * 100)}%` : "0%"],
-    ["In Progress", inProgress, myTasks.length ? `${Math.round((inProgress / myTasks.length) * 100)}%` : "0%"],
-    ["Done", done, myTasks.length ? `${Math.round((done / myTasks.length) * 100)}%` : "0%"],
-  ];
-
-  const upcoming = myTasks
-    .filter((t) => t.status !== "done" && t.due_date)
-    .sort((a, b) => String(a.due_date).localeCompare(String(b.due_date)))
-    .slice(0, 4)
-    .map((t) => [t.title, `pin ${t.pincode || "—"} · ${String(t.priority || "").toUpperCase()}`, t.due_date]);
-
+/* ─────────────────────────────────────────────────────────
+   VIEW REPORTED CALLS MODAL
+───────────────────────────────────────────────────────── */
+function ReportedCallsModal({ visits, onClose }) {
+  const reported = visits.filter((v) => v.status === "Reported");
   return (
-    <>
-      <div className="stats">
-        <Stat icon="◎" title="My Tasks" value={myTasks.length} text={`${open} open`} type="blue" />
-        <Stat icon="✓" title="Completed" value={done} text={`${donePct}% done`} type="green" />
-        <Stat icon="♙" title="Pin Codes Covered" value={myPincodes.size} text="Assigned coverage" type="orange" />
-        <Stat icon="◎" title="Doctors In Area" value={pincodeRows.reduce((s, r) => s + r.doctorCount, 0)} text="Across my pin codes" type="red" />
+    <div className="zzc-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="zzc-modal rpt-reported-modal">
+        <div className="rpt-call-modal-header">
+          <h2>Reported Calls ({reported.length})</h2>
+          <button className="rpt-call-close" onClick={onClose} type="button">✕</button>
+        </div>
+        <div className="rpt-reported-body">
+          {reported.length === 0 ? (
+            <p style={{ color: "var(--muted-foreground)", textAlign: "center", padding: "1.5rem 0" }}>No reported calls yet.</p>
+          ) : (
+            <div className="table-panel" style={{ overflow: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: ".75rem" }}>
+                <thead>
+                  <tr>
+                    <th>Sno</th>
+                    <th>Doctor</th>
+                    <th>Product</th>
+                    <th>Discussed</th>
+                    <th>Outcome</th>
+                    <th>Next Visit</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reported.map((v) => (
+                    <tr key={v.id}>
+                      <td>{v.advaitNo}</td>
+                      <td>
+                        <div className="rpt-doc-cell">
+                          <strong>{v.doctorName}</strong>
+                          <span className="rpt-doc-tag">{v.tag}</span>
+                        </div>
+                      </td>
+                      <td style={{ color: "var(--primary)" }}>{v.brands}</td>
+                      <td style={{ color: "oklch(52% .14 165)" }}>{v.campaign}</td>
+                      <td>
+                        {v.callOutcome ? (
+                          <span className="rpt-outcome-badge">{v.callOutcome}</span>
+                        ) : "—"}
+                      </td>
+                      <td>{v.nextVisitDate || "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+        <div className="rpt-call-modal-footer">
+          <button className="rpt-btn-primary" onClick={onClose}>Close</button>
+        </div>
       </div>
-
-      <div className="two-columns">
-        <Chart title="My Tasks by Priority" categories={["Low", "Medium", "High"]} targets={totals} achieved={doneByPriority} />
-        <Achievement percentage={`${donePct}%`} achieved={done} progress={inProgress} pending={open} />
-      </div>
-
-      <div className="two-columns">
-        <Performers title="Top Pin Codes in My Area" people={topPincodes} />
-        <StatusList title="My Task Status" rows={statusRows} />
-      </div>
-
-      <div className="two-columns">
-        <UpcomingList title="Upcoming Tasks" rows={upcoming} />
-      </div>
-    </>
+    </div>
   );
 }
 
-/* =========================================================
-   MANAGER / REGIONAL DASHBOARD (shared shape, scoped differently)
-========================================================= */
-
-function TeamDashboard({ data, region, scopeLabel }) {
-  const { executives, coverage, tasks, doctors, products } = data;
-
-  const execsInScope = region ? executives.filter((e) => e.region === region) : executives;
-
-  const execStats = execsInScope.map((exec) => {
-    const pincodes = new Set(coverage.filter((c) => c.executive_id === exec.id).map((c) => c.pincode));
-    const myTasks = tasks.filter((t) => t.pincode && pincodes.has(t.pincode));
-    const done = myTasks.filter((t) => t.status === "done").length;
-    const pct = myTasks.length > 0 ? Math.round((done / myTasks.length) * 100) : 0;
-    return { exec, pincodes, taskCount: myTasks.length, done, pct };
-  });
-
-  const scopePincodes = [...new Set(coverage.filter((c) => execsInScope.some((e) => e.id === c.executive_id)).map((c) => c.pincode))];
-  const scopeTasks = tasks.filter((t) => !t.pincode || scopePincodes.includes(t.pincode));
-  const totalDone = scopeTasks.filter((t) => t.status === "done").length;
-  const totalOpen = scopeTasks.length - totalDone;
-  const overallPct = scopeTasks.length > 0 ? Math.round((totalDone / scopeTasks.length) * 100) : 0;
-
-  const scopeDoctors = doctors.filter((d) => scopePincodes.includes(d.pincode)).length;
-
-  const topExecutives = [...execStats]
-    .sort((a, b) => b.pct - a.pct)
-    .slice(0, 3)
-    .map((r) => [r.exec.name, r.exec.region || r.exec.city || "—", `${r.pct}%`]);
-
-  const tableRows = execStats
-    .slice(0, 6)
-    .map((r) => [r.exec.name, r.taskCount, r.done, `${r.pct}%`]);
-
-  const categories = execStats.slice(0, 6).map((r) => r.exec.name);
-  const targets = execStats.slice(0, 6).map((r) => r.taskCount);
-  const achieved = execStats.slice(0, 6).map((r) => r.done);
+/* ─────────────────────────────────────────────────────────
+   SUBMIT TOAST
+───────────────────────────────────────────────────────── */
+function SubmitToast({ reportDate, reportingType, reported, total, onClose }) {
+  useEffect(() => {
+    const t = setTimeout(onClose, 5000);
+    return () => clearTimeout(t);
+  }, [onClose]);
 
   return (
-    <>
-      <div className="stats">
-        <Stat icon="♙" title="My Executives" value={execsInScope.length} text={scopeLabel} type="blue" />
-        <Stat icon="◎" title="Total Tasks" value={scopeTasks.length} text="This period" type="green" />
-        <Stat icon="▣" title="Pin Codes" value={scopePincodes.length} text="Covered" type="orange" />
-        <Stat icon="₹" title="Completion" value={`${overallPct}%`} text={`${scopeDoctors} doctors in scope`} type="red" />
+    <div className="rpt-submit-toast">
+      <div className="rpt-submit-toast-icon">✓</div>
+      <div>
+        <strong>Report Submitted Successfully!</strong>
+        <p>{reportingType} · {reportDate} · {reported}/{total} visits reported</p>
       </div>
-
-      <div className="two-columns">
-        <Chart title="Team Target vs Achievement" categories={categories.length ? categories : ["—"]} targets={targets.length ? targets : [0]} achieved={achieved.length ? achieved : [0]} />
-        <Achievement percentage={`${overallPct}%`} achieved={totalDone} progress={0} pending={totalOpen} />
-      </div>
-
-      <div className="two-columns">
-        <Performers title="Top Performing Executives" people={topExecutives} />
-        <Table title="Executive Performance" headers={["Executive", "Tasks", "Done", "%"]} rows={tableRows} />
-      </div>
-    </>
+      <button className="rpt-call-close" onClick={onClose} type="button">✕</button>
+    </div>
   );
 }
 
-/* =========================================================
-   REPORTS VIEW — Daily Reporting (matches UI screenshot)
-========================================================= */
-
-// Sample brands / campaigns used when no backend visit data exists yet.
-const SAMPLE_VISITS = [
-  { id: 1, advaitNo: "28690", doctorName: "KAPIL RANGAN", tag: "CARD", brands: "Nebicard, Losar, Nikoran", campaign: "HeartBeat 2026", status: "Reported" },
-  { id: 2, advaitNo: "228442", doctorName: "LACHIKARATHMAN DEWEGOWDA", tag: "CARD", brands: "Chymoral, Shelcal, Nexpro", campaign: "GastroCare Q3", status: "Reported" },
-  { id: 3, advaitNo: "28588", doctorName: "MANOHAR J SURANAGI", tag: "NEURO", brands: "Veloz, Unienzyme", campaign: "NeuroShield 2026", status: "Reported" },
-  { id: 4, advaitNo: "218267", doctorName: "SHIVA KUMAR D ORESWAMY", tag: "ORTHO", brands: "Chymoral Forte, Osteo-Plus", campaign: "Mobility First", status: "Not Reported" },
-];
-
+/* ─────────────────────────────────────────────────────────
+   REPORTS VIEW
+   - Seeded from real API doctors in the exec's territory
+   - Full Pre Call / Post Call / Edit Call modal flow
+   - View Reported Calls modal
+   - Final Submit with toast confirmation
+───────────────────────────────────────────────────────── */
 function ReportsView({ data, execId }) {
   const today = new Date().toISOString().slice(0, 10);
   const [reportingType, setReportingType] = useState("Field");
   const [reportDate, setReportDate] = useState(today);
-  const [visitTab, setVisitTab] = useState("planned"); // "planned" | "unplanned"
-  const [searchDoctor, setSearchDoctor] = useState("");
+  const [visitTab, setVisitTab] = useState("planned");
+  const [doctorSearch, setDoctorSearch] = useState("");
   const [selectedDoctor, setSelectedDoctor] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all"); // "all" | "reported" | "not_reported"
-  const [visits, setVisits] = useState(SAMPLE_VISITS);
+  const [statusFilter, setStatusFilter] = useState("all");
 
-  // Doctors belonging to exec's pincodes (for the territory dropdown)
+  // Modal states
+  const [preCallVisit, setPreCallVisit] = useState(null);
+  const [postCallVisit, setPostCallVisit] = useState(null);
+  const [editCallVisit, setEditCallVisit] = useState(null);
+  const [showReported, setShowReported] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  // The visits list — seeded from real API doctors in the exec's territory
   const exec = data.executives.find((e) => e.id === execId) || data.executives[0];
+
   const myPincodes = useMemo(
     () => new Set(data.coverage.filter((c) => c.executive_id === exec?.id).map((c) => c.pincode)),
     [data.coverage, exec]
   );
+
   const territoryDoctors = useMemo(
     () => data.doctors.filter((d) => myPincodes.has(d.pincode)),
     [data.doctors, myPincodes]
   );
 
-  const filteredVisits = visits.filter((v) => {
-    const matchSearch = !searchDoctor || v.doctorName.toLowerCase().includes(searchDoctor.toLowerCase());
-    const matchStatus =
-      statusFilter === "all" ||
-      (statusFilter === "reported" && v.status === "Reported") ||
-      (statusFilter === "not_reported" && v.status === "Not Reported");
-    return matchSearch && matchStatus;
-  });
+  // Build initial visits from live territory doctors
+  const [visits, setVisits] = useState([]);
 
-  const reported = visits.filter((v) => v.status === "Reported").length;
-  const pending = visits.length - reported;
+  // Re-seed whenever the exec / territory doctors change
+  useEffect(() => {
+    if (territoryDoctors.length === 0) return;
+    setVisits(
+      territoryDoctors.map((doc) => ({
+        id: doc.id,
+        advaitNo: String(doc.id),
+        doctorName: doc.name?.toUpperCase() ?? "UNKNOWN",
+        tag: doc.specializations
+          ? doc.specializations.split(",")[0].trim().toUpperCase().slice(0, 6)
+          : "GEN",
+        qualification: doc.qualification || "",
+        pincode: doc.pincode,
+        brands: "—",
+        campaign: "—",
+        status: "Not Reported",
+        preCallObjective: "",
+        preCallNotes: "",
+        callOutcome: "",
+        prescriptions: "",
+        feedback: "",
+        nextVisitDate: "",
+      }))
+    );
+    setSubmitted(false);
+  }, [territoryDoctors]);
+
+  // Dropdown search — doctors not yet in the visit list
+  const addableDoctors = useMemo(() => {
+    const inList = new Set(visits.map((v) => v.id));
+    return territoryDoctors.filter((d) => !inList.has(d.id));
+  }, [territoryDoctors, visits]);
 
   function handleAddDoctor() {
     if (!selectedDoctor) return;
     const doc = territoryDoctors.find((d) => String(d.id) === selectedDoctor);
     if (!doc) return;
-    if (visits.some((v) => v.advaitNo === String(doc.id))) return;
     setVisits((prev) => [
       ...prev,
       {
-        id: Date.now(),
+        id: doc.id,
         advaitNo: String(doc.id),
-        doctorName: doc.name.toUpperCase(),
-        tag: doc.specializations ? doc.specializations.split(",")[0].trim().toUpperCase().slice(0, 6) : "GEN",
+        doctorName: doc.name?.toUpperCase() ?? "UNKNOWN",
+        tag: doc.specializations
+          ? doc.specializations.split(",")[0].trim().toUpperCase().slice(0, 6)
+          : "GEN",
+        qualification: doc.qualification || "",
+        pincode: doc.pincode,
         brands: "—",
         campaign: "—",
         status: "Not Reported",
+        preCallObjective: "",
+        preCallNotes: "",
+        callOutcome: "",
+        prescriptions: "",
+        feedback: "",
+        nextVisitDate: "",
       },
     ]);
     setSelectedDoctor("");
   }
 
-  function handleRemoveVisit() {
+  function handleRemoveUnreported() {
     setVisits((prev) => prev.filter((v) => v.status !== "Not Reported"));
   }
 
-  function toggleStatus(id) {
-    setVisits((prev) =>
-      prev.map((v) =>
-        v.id === id ? { ...v, status: v.status === "Reported" ? "Not Reported" : "Reported" } : v
-      )
-    );
+  function handleUpdateVisit(updated) {
+    setVisits((prev) => prev.map((v) => (v.id === updated.id ? updated : v)));
   }
+
+  function handleFinalSubmit() {
+    const reportedCount = visits.filter((v) => v.status === "Reported").length;
+    if (reportedCount === 0) {
+      alert("Please report at least one visit before submitting.");
+      return;
+    }
+    setSubmitted(true);
+    setShowToast(true);
+  }
+
+  // Filtered display
+  const filteredVisits = useMemo(() => {
+    const term = doctorSearch.trim().toLowerCase();
+    return visits.filter((v) => {
+      const matchSearch =
+        !term ||
+        v.doctorName.toLowerCase().includes(term) ||
+        v.advaitNo.includes(term) ||
+        v.tag.toLowerCase().includes(term);
+      const matchStatus =
+        statusFilter === "all" ||
+        (statusFilter === "reported" && v.status === "Reported") ||
+        (statusFilter === "not_reported" && v.status === "Not Reported");
+      return matchSearch && matchStatus;
+    });
+  }, [visits, doctorSearch, statusFilter]);
+
+  const reportedCount = visits.filter((v) => v.status === "Reported").length;
+  const pendingCount = visits.length - reportedCount;
+
+  const isLoading = data.loading;
+  const noTerritory = !isLoading && myPincodes.size === 0;
+  const noDoctors = !isLoading && myPincodes.size > 0 && territoryDoctors.length === 0;
 
   return (
     <div className="rpt-wrap">
-      {/* Page heading */}
-      <div className="rpt-page-title">
-        <span className="rpt-back">‹</span>
-        <h2>New Daily Reporting</h2>
-      </div>
 
-      {/* Top controls */}
-      <div className="rpt-controls panel">
+      {/* ── TOAST ── */}
+      {showToast && (
+        <SubmitToast
+          reportDate={reportDate}
+          reportingType={reportingType}
+          reported={reportedCount}
+          total={visits.length}
+          onClose={() => setShowToast(false)}
+        />
+      )}
+
+      {/* ── TOP CONTROLS ── */}
+      <div className="panel rpt-controls">
         <div className="rpt-control-row">
           <div className="rpt-field">
             <label>Reporting Type *</label>
@@ -595,20 +725,25 @@ function ReportsView({ data, execId }) {
             <label>Report Date *</label>
             <input type="date" value={reportDate} onChange={(e) => setReportDate(e.target.value)} />
           </div>
-          <div className="rpt-day-type">
-            <span className="rpt-dot rpt-dot-green"></span> Work
-            <span className="rpt-dot rpt-dot-red"></span> Leave
-            <span className="rpt-dot rpt-dot-blue"></span> Holiday
-          </div>
           <div className="rpt-control-actions">
-            <button className="rpt-btn-primary">Proceed</button>
-            <button className="rpt-btn-outline">View Reported Calls ({reported})</button>
+            <button
+              className="rpt-btn-primary"
+              onClick={() => setStatusFilter("all")}
+            >
+              Proceed
+            </button>
+            <button
+              className="rpt-btn-outline"
+              onClick={() => setShowReported(true)}
+            >
+              View Reported Calls ({reportedCount})
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Planned / Unplanned tabs */}
-      <div className="rpt-tabs-bar panel">
+      {/* ── TABS ── */}
+      <div className="panel rpt-tabs-bar">
         <button
           className={"rpt-tab" + (visitTab === "planned" ? " active" : "")}
           onClick={() => setVisitTab("planned")}
@@ -618,46 +753,44 @@ function ReportsView({ data, execId }) {
         <button
           className={"rpt-tab" + (visitTab === "unplanned" ? " active" : "")}
           onClick={() => setVisitTab("unplanned")}
-        > Unplanned Visit
+        >
+          Unplanned Visit
         </button>
       </div>
 
-      {/* Doctor search + add row */}
-      <div className="rpt-add-row panel">
+      {/* ── ADD DOCTOR ROW ── */}
+      <div className="panel rpt-add-row">
         <div className="rpt-search-wrap">
           <label>Search Doctor</label>
           <div className="rpt-search-input-wrap">
             <input
               type="text"
               placeholder="Type name, Advait No., or speciality…"
-              value={searchDoctor}
-              onChange={(e) => setSearchDoctor(e.target.value)}
+              value={doctorSearch}
+              onChange={(e) => setDoctorSearch(e.target.value)}
             />
             <span className="rpt-search-icon">🔍</span>
           </div>
         </div>
+
         <div className="rpt-select-wrap">
           <label>Select Doctor</label>
           <select value={selectedDoctor} onChange={(e) => setSelectedDoctor(e.target.value)}>
-            <option value="">-- Choose Doctor from Territory --</option>
-            {territoryDoctors.map((d) => (
-              <option key={d.id} value={d.id}>{d.name}</option>
+            <option value="">— Choose Doctor from Region —</option>
+            {addableDoctors.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.name}{d.specializations ? ` · ${d.specializations.split(",")[0].trim()}` : ""}
+              </option>
             ))}
           </select>
         </div>
-        <button className="rpt-btn-primary" onClick={handleAddDoctor}>+ Add</button>
-        <button className="rpt-btn-danger" onClick={handleRemoveVisit}>🗑 Remove Visit Details</button>
+
+        <button className="rpt-btn-primary" onClick={handleAddDoctor}> Add</button>
+        <button className="rpt-btn-danger" onClick={handleRemoveUnreported}> Remove Visit Details</button>
       </div>
 
-      {/* Indication filters */}
-      <div className="rpt-filter-row panel">
-        <div className="rpt-indication">
-          <span>Indication :</span>
-          <span className="rpt-ind-pill rpt-green">Excel</span>
-          <span className="rpt-ind-pill rpt-teal">VIP</span>
-          <span className="rpt-ind-pill rpt-blue">A</span>
-          <span className="rpt-ind-pill rpt-purple">B</span>
-        </div>
+      {/* ── INDICATION / STATUS FILTER ROW ── */}
+      <div className="panel rpt-filter-row">
         <div className="rpt-status-filter">
           <span>Reporting Status:</span>
           <label>
@@ -675,79 +808,163 @@ function ReportsView({ data, execId }) {
         </div>
       </div>
 
-      {/* Visit table */}
+      {/* ── VISITS TABLE ── */}
       <div className="panel table-panel rpt-table-panel">
-        <table>
-          <thead>
-            <tr>
-              <th style={{ width: 36 }}><input type="checkbox" /></th>
-              <th>Advait No</th>
-              <th>Doctor Name</th>
-              <th>Brands</th>
-              <th>Campaign Name</th>
-              <th>Status</th>
-              <th>Option</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredVisits.length === 0 ? (
-              <tr><td colSpan={7} style={{ color: "var(--muted-foreground)", textAlign: "center", padding: "1.5rem" }}>No visits found.</td></tr>
-            ) : (
-              filteredVisits.map((v) => (
-                <tr key={v.id}>
-                  <td><input type="checkbox" /></td>
-                  <td>{v.advaitNo}</td>
-                  <td>
-                    <div className="rpt-doc-cell">
-                      <strong>{v.doctorName}</strong>
-                      <span className="rpt-doc-tag">{v.tag}</span>
-                    </div>
-                  </td>
-                  <td><span className="rpt-brands">{v.brands}</span></td>
-                  <td><span className="rpt-campaign">{v.campaign}</span></td>
-                  <td>
-                    <span className={"rpt-status-badge" + (v.status === "Reported" ? " reported" : " not-reported")}>
-                      {v.status}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="rpt-options">
-                      <button className="rpt-btn-sm rpt-btn-outline">Pre Call</button>
-                      <button
-                        className={"rpt-btn-sm" + (v.status === "Reported" ? " rpt-btn-edit" : " rpt-btn-post")}
-                        onClick={() => toggleStatus(v.id)}
-                      >
-                        {v.status === "Reported" ? "Edit Call" : "Post Call"}
-                      </button>
-                    </div>
-                  </td>
+        {isLoading ? (
+          <p className="rpt-empty-state">Loading doctors from your territory…</p>
+        ) : noTerritory ? (
+          <p className="rpt-empty-state">No pin codes assigned to this executive yet.</p>
+        ) : noDoctors ? (
+          <p className="rpt-empty-state">No doctors found in your assigned pin codes.</p>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th style={{ width: 36 }}><input type="checkbox" /></th>
+                <th>Sno</th>
+                <th>Doctor Name</th>
+                <th>Product</th>
+                <th>Discussed</th>
+                <th>Status</th>
+                <th>Option</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredVisits.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="rpt-empty-td">No visits match your filter.</td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                filteredVisits.map((v) => (
+                  <tr key={v.id}>
+                    <td><input type="checkbox" /></td>
+                    <td className="rpt-advait-no">{v.advaitNo}</td>
+                    <td>
+                      <div className="rpt-doc-cell">
+                        <div className="rpt-doc-avatar">{v.doctorName.charAt(0)}</div>
+                        <div>
+                          <strong>{v.doctorName}</strong>
+                          <div style={{ marginTop: 2 }}>
+                            <span className="rpt-doc-tag">{v.tag}</span>
+                            {v.pincode && (
+                              <span className="rpt-doc-pin"> {v.pincode}</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      {v.brands === "—"
+                        ? <span style={{ color: "var(--muted-foreground)" }}>—</span>
+                        : <span className="rpt-brands">{v.brands}</span>
+                      }
+                    </td>
+                    <td>
+                      {v.campaign === "—"
+                        ? <span style={{ color: "var(--muted-foreground)" }}>—</span>
+                        : <span className="rpt-campaign">{v.campaign}</span>
+                      }
+                    </td>
+                    <td>
+                      <span className={"rpt-status-badge" + (v.status === "Reported" ? " reported" : " not-reported")}>
+                        {v.status}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="rpt-options">
+                        <button
+                          className="rpt-btn-sm rpt-btn-outline"
+                          onClick={() => setPreCallVisit(v)}
+                          title="Fill pre-call details"
+                        >
+                          Pre Call
+                        </button>
+                        {v.status === "Reported" ? (
+                          <button
+                            className="rpt-btn-sm rpt-btn-edit"
+                            onClick={() => setEditCallVisit(v)}
+                            title="Edit reported call"
+                          >
+                            Edit Call
+                          </button>
+                        ) : (
+                          <button
+                            className="rpt-btn-sm rpt-btn-post"
+                            onClick={() => setPostCallVisit(v)}
+                            title="Mark as reported"
+                          >
+                            Post Call
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        )}
       </div>
 
-      {/* Footer summary */}
+      {/* ── FOOTER ── */}
       <div className="rpt-footer">
         <span className="rpt-summary">
-          Total Visits in List: <strong>{visits.length}</strong> | Reported: <strong>{reported}</strong> | Pending: <strong>{pending}</strong>
+          Total Visits in List: <strong>{visits.length}</strong>&nbsp;|&nbsp;
+          Reported: <strong>{reportedCount}</strong>&nbsp;|&nbsp;
+          Pending: <strong>{pendingCount}</strong>
         </span>
-        <button className="rpt-btn-final">FINAL SUBMIT</button>
+        <button
+          className={"rpt-btn-final" + (submitted ? " rpt-btn-final-done" : "")}
+          onClick={handleFinalSubmit}
+          disabled={submitted}
+        >
+          {submitted ? "✓ Submitted" : "FINAL SUBMIT"}
+        </button>
       </div>
+
+
+      {/* ── MODALS ── */}
+      {preCallVisit && (
+        <PreCallModal
+          visit={preCallVisit}
+          onClose={() => setPreCallVisit(null)}
+          onSave={(updated) => { handleUpdateVisit(updated); setPreCallVisit(null); }}
+        />
+      )}
+      {postCallVisit && (
+        <PostCallModal
+          visit={postCallVisit}
+          onClose={() => setPostCallVisit(null)}
+          onSave={(updated) => { handleUpdateVisit(updated); setPostCallVisit(null); }}
+        />
+      )}
+      {editCallVisit && (
+        <EditCallModal
+          visit={editCallVisit}
+          onClose={() => setEditCallVisit(null)}
+          onSave={(updated) => { handleUpdateVisit(updated); setEditCallVisit(null); }}
+        />
+      )}
+      {showReported && (
+        <ReportedCallsModal visits={visits} onClose={() => setShowReported(false)} />
+      )}
     </div>
   );
 }
 
-/* =========================================================
-   DOCTORS VIEW — filtered by exec's assigned pincodes
-========================================================= */
-
+/* ─────────────────────────────────────────────────────────
+   DOCTORS VIEW
+   - Real-time doctors from API filtered by exec's pincodes
+   - Proper heading matching Reports page style
+   - Consistent CSS classes
+───────────────────────────────────────────────────────── */
 function DoctorsView({ data, execId }) {
   const [search, setSearch] = useState("");
   const [filterPincode, setFilterPincode] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
 
   const exec = data.executives.find((e) => e.id === execId) || data.executives[0];
+
   const myPincodes = useMemo(
     () => new Set(data.coverage.filter((c) => c.executive_id === exec?.id).map((c) => c.pincode)),
     [data.coverage, exec]
@@ -760,6 +977,10 @@ function DoctorsView({ data, execId }) {
 
   const pincodeList = useMemo(() => [...myPincodes].sort(), [myPincodes]);
 
+  const activeCount = myDoctors.filter(
+    (d) => d.is_active === "Yes" || d.is_active === true
+  ).length;
+
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
     return myDoctors.filter((d) => {
@@ -767,48 +988,81 @@ function DoctorsView({ data, execId }) {
         !term ||
         d.name?.toLowerCase().includes(term) ||
         String(d.pincode).includes(term) ||
-        d.specializations?.toLowerCase().includes(term);
-      const matchPin = filterPincode === "all" || d.pincode === filterPincode;
-      return matchSearch && matchPin;
+        d.specializations?.toLowerCase().includes(term) ||
+        d.qualification?.toLowerCase().includes(term);
+      const matchPin = filterPincode === "all" || String(d.pincode) === filterPincode;
+      const isActive = d.is_active === "Yes" || d.is_active === true;
+      const matchStatus =
+        filterStatus === "all" ||
+        (filterStatus === "active" && isActive) ||
+        (filterStatus === "inactive" && !isActive);
+      return matchSearch && matchPin && matchStatus;
     });
-  }, [myDoctors, search, filterPincode]);
+  }, [myDoctors, search, filterPincode, filterStatus]);
 
   function starRating(rating) {
-    const r = Math.round(Number(rating) || 0);
-    return "★".repeat(r) + "☆".repeat(Math.max(0, 5 - r));
+    const r = Math.min(5, Math.max(0, Math.round(Number(rating) || 0)));
+    return "★".repeat(r) + "☆".repeat(5 - r);
   }
 
   return (
     <div className="doc-view-wrap">
-      {/* Header strip */}
-      <div className="doc-view-header">
-        <div>
-          <h2>Doctors in My Territory</h2>
-          <p>{myDoctors.length} doctors across {myPincodes.size} pin code{myPincodes.size !== 1 ? "s" : ""}</p>
+
+      {/* ── PAGE TITLE — same pattern as Reports ── */}
+      <div className="crm-page-title">
+        <span className="crm-page-back">⚕</span>
+        <h2>Doctors in My Region</h2>
+      </div>
+
+      {/* ── STAT PILLS ── */}
+      <div className="doc-stat-row">
+        <div className="doc-stat-card">
+          <div className="stat-icon orange">⊞</div>
+          <div>
+            <span>Pin Codes</span>
+            <strong>{myPincodes.size}</strong>
+            <small>Assigned coverage</small>
+          </div>
         </div>
-        <div className="doc-view-stats">
-          <span className="doc-stat-pill">
-            <strong>{myPincodes.size}</strong> Pin Codes
-          </span>
-          <span className="doc-stat-pill">
-            <strong>{myDoctors.length}</strong> Doctors
-          </span>
-          <span className="doc-stat-pill">
-            <strong>{myDoctors.filter((d) => d.is_active === "Yes" || d.is_active === true).length}</strong> Active
-          </span>
+        <div className="doc-stat-card">
+          <div className="stat-icon blue">⚕</div>
+          <div>
+            <span>Total Doctors</span>
+            <strong>{myDoctors.length}</strong>
+            <small>In my territory</small>
+          </div>
+        </div>
+        <div className="doc-stat-card">
+          <div className="stat-icon green">✓</div>
+          <div>
+            <span>Active</span>
+            <strong>{activeCount}</strong>
+            <small>Available for visits</small>
+          </div>
+        </div>
+        <div className="doc-stat-card">
+          <div className="stat-icon red">○</div>
+          <div>
+            <span>Inactive</span>
+            <strong>{myDoctors.length - activeCount}</strong>
+            <small>Not currently active</small>
+          </div>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="doc-view-filters panel">
-        <div className="rpt-search-input-wrap" style={{ flex: 1, minWidth: 220 }}>
-          <input
-            type="text"
-            placeholder="Search by name, specialization, pin code…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          <span className="rpt-search-icon">🔍</span>
+      {/* ── FILTERS ── */}
+      <div className="panel doc-view-filters">
+        <div className="rpt-search-wrap" style={{ flex: 1, minWidth: 220 }}>
+          <label>Search</label>
+          <div className="rpt-search-input-wrap">
+            <input
+              type="text"
+              placeholder="Name, specialization, pin code, qualification…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            <span className="rpt-search-icon">🔍</span>
+          </div>
         </div>
         <div className="rpt-field">
           <label>Pin Code</label>
@@ -819,19 +1073,23 @@ function DoctorsView({ data, execId }) {
             ))}
           </select>
         </div>
+        <div className="rpt-field">
+          <label>Status</label>
+          <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+            <option value="all">All</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
       </div>
 
-      {/* Doctors table */}
+      {/* ── TABLE ── */}
       {data.loading ? (
-        <p style={{ color: "var(--muted-foreground)", padding: "1rem" }}>Loading doctors…</p>
+        <div className="panel rpt-empty-state">Loading doctors…</div>
       ) : myPincodes.size === 0 ? (
-        <div className="panel" style={{ padding: "1.5rem", color: "var(--muted-foreground)", textAlign: "center" }}>
-          No pin codes assigned to this executive yet.
-        </div>
+        <div className="panel rpt-empty-state">No pin codes assigned to this executive yet.</div>
       ) : filtered.length === 0 ? (
-        <div className="panel" style={{ padding: "1.5rem", color: "var(--muted-foreground)", textAlign: "center" }}>
-          No doctors match your search.
-        </div>
+        <div className="panel rpt-empty-state">No doctors match your search.</div>
       ) : (
         <div className="panel table-panel doc-table-panel">
           <table>
@@ -843,6 +1101,8 @@ function DoctorsView({ data, execId }) {
                 <th>Specialization</th>
                 <th>Pin Code</th>
                 <th>Experience</th>
+                <th>Consult Fee</th>
+                <th>Rating</th>
                 <th>Status</th>
               </tr>
             </thead>
@@ -851,24 +1111,44 @@ function DoctorsView({ data, execId }) {
                 const isActive = doc.is_active === "Yes" || doc.is_active === true;
                 return (
                   <tr key={doc.id}>
-                    <td style={{ color: "var(--muted-foreground)" }}>{i + 1}</td>
+                    <td className="doc-row-num">{i + 1}</td>
                     <td>
                       <div className="doc-name-cell">
                         <div className="doc-avatar">{doc.name?.charAt(0).toUpperCase() ?? "?"}</div>
-                        <span>{doc.name}</span>
+                        <div>
+                          <span className="doc-name-text">{doc.name}</span>
+                          {doc.verification_status && (
+                            <div>
+                              <span className={"doc-verify-badge doc-verify-" + doc.verification_status}>
+                                {doc.verification_status}
+                              </span>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </td>
-                    <td>{doc.qualification || "—"}</td>
+                    <td className="doc-muted">{doc.qualification || "—"}</td>
                     <td>
-                      {doc.specializations ? (
-                        <span className="rpt-doc-tag" style={{ fontSize: "0.7rem" }}>{doc.specializations}</span>
-                      ) : "—"}
+                      {doc.specializations
+                        ? doc.specializations.split(",").map((s, si) => (
+                          <span key={si} className="rpt-doc-tag" style={{ marginRight: 3, marginBottom: 2, display: "inline-block" }}>
+                            {s.trim()}
+                          </span>
+                        ))
+                        : <span className="doc-muted">—</span>
+                      }
+                    </td>
+                    <td><span className="doc-pincode-badge">{doc.pincode}</span></td>
+                    <td className="doc-muted">
+                      {doc.experience_years != null ? `${doc.experience_years} yrs` : "—"}
+                    </td>
+                    <td className="doc-muted">
+                      {doc.consultation_fee != null ? `₹${doc.consultation_fee}` : "—"}
                     </td>
                     <td>
-                      <span className="doc-pincode-badge">{doc.pincode}</span>
-                    </td>
-                    <td>{doc.experience_years != null ? `${doc.experience_years} yrs` : "—"}</td>
-                    <td>
+                      <span className="doc-stars" title={`${doc.rating ?? 0}/5`}>
+                        {starRating(doc.rating)}
+                      </span>
                     </td>
                     <td>
                       <span className={"doc-status-badge" + (isActive ? " active" : " inactive")}>
@@ -880,8 +1160,9 @@ function DoctorsView({ data, execId }) {
               })}
             </tbody>
           </table>
-          <div style={{ padding: "0.6rem 0.65rem", fontSize: "0.72rem", color: "var(--muted-foreground)", borderTop: "1px solid var(--border)" }}>
-            Showing {filtered.length} of {myDoctors.length} doctors in your territory
+          <div className="doc-table-footer">
+            Showing <strong>{filtered.length}</strong> of <strong>{myDoctors.length}</strong> doctors
+            across <strong>{myPincodes.size}</strong> pin code{myPincodes.size !== 1 ? "s" : ""}
           </div>
         </div>
       )}
@@ -889,10 +1170,111 @@ function DoctorsView({ data, execId }) {
   );
 }
 
-/* =========================================================
-   SHELL — visual clone of the sales-crm sidebar + header
-========================================================= */
+/* ─────────────────────────────────────────────────────────
+   EXECUTIVE DASHBOARD
+───────────────────────────────────────────────────────── */
+function ExecutiveDashboard({ data, execId }) {
+  const { executives, coverage, tasks, doctors, products } = data;
+  const exec = executives.find((e) => e.id === execId) || executives[0];
+  const myPincodes = new Set(coverage.filter((c) => c.executive_id === exec?.id).map((c) => c.pincode));
+  const myTasks = tasks.filter((t) => !t.pincode || myPincodes.has(t.pincode));
+  const done = myTasks.filter((t) => t.status === "done").length;
+  const inProgress = myTasks.filter((t) => t.status === "in progress").length;
+  const open = myTasks.length - done - inProgress;
+  const donePct = myTasks.length > 0 ? Math.round((done / myTasks.length) * 100) : 0;
+  const PRIORITIES = ["low", "medium", "high"];
+  const totals = PRIORITIES.map((p) => myTasks.filter((t) => String(t.priority || "").toLowerCase() === p).length);
+  const doneByPriority = PRIORITIES.map((p) => myTasks.filter((t) => String(t.priority || "").toLowerCase() === p && t.status === "done").length);
+  const pincodeRows = [...myPincodes].map((pc) => ({
+    pc,
+    doctorCount: doctors.filter((d) => d.pincode === pc).length,
+    productCount: products.filter((p) => p.pincode === pc).length,
+  }));
+  const maxScore = Math.max(1, ...pincodeRows.map((r) => r.doctorCount + r.productCount));
+  const topPincodes = [...pincodeRows]
+    .sort((a, b) => b.doctorCount + b.productCount - (a.doctorCount + a.productCount))
+    .slice(0, 3)
+    .map((r) => [r.pc, `${r.doctorCount} doctors · ${r.productCount} products`, `${Math.round(((r.doctorCount + r.productCount) / maxScore) * 100)}%`]);
+  const statusRows = [
+    ["Open", open, myTasks.length ? `${Math.round((open / myTasks.length) * 100)}%` : "0%"],
+    ["In Progress", inProgress, myTasks.length ? `${Math.round((inProgress / myTasks.length) * 100)}%` : "0%"],
+    ["Done", done, myTasks.length ? `${Math.round((done / myTasks.length) * 100)}%` : "0%"],
+  ];
+  const upcoming = myTasks
+    .filter((t) => t.status !== "done" && t.due_date)
+    .sort((a, b) => String(a.due_date).localeCompare(String(b.due_date)))
+    .slice(0, 4)
+    .map((t) => [t.title, `pin ${t.pincode || "—"} · ${String(t.priority || "").toUpperCase()}`, t.due_date]);
+  return (
+    <>
+      <div className="stats">
+        <Stat icon="◎" title="My Tasks" value={myTasks.length} text={`${open} open`} type="blue" />
+        <Stat icon="✓" title="Completed" value={done} text={`${donePct}% done`} type="green" />
+        <Stat icon="♙" title="Pin Codes Covered" value={myPincodes.size} text="Assigned coverage" type="orange" />
+        <Stat icon="⚕" title="Doctors In Area" value={pincodeRows.reduce((s, r) => s + r.doctorCount, 0)} text="Across my pin codes" type="red" />
+      </div>
+      <div className="two-columns">
+        <Chart title="My Tasks by Priority" categories={["Low", "Medium", "High"]} targets={totals} achieved={doneByPriority} />
+        <Achievement percentage={`${donePct}%`} achieved={done} progress={inProgress} pending={open} />
+      </div>
+      <div className="two-columns">
+        <Performers title="Top Pin Codes in My Area" people={topPincodes} />
+        <StatusList title="My Task Status" rows={statusRows} />
+      </div>
+      <div className="two-columns">
+        <UpcomingList title="Upcoming Tasks" rows={upcoming} />
+      </div>
+    </>
+  );
+}
 
+/* ─────────────────────────────────────────────────────────
+   TEAM DASHBOARD
+───────────────────────────────────────────────────────── */
+function TeamDashboard({ data, region, scopeLabel }) {
+  const { executives, coverage, tasks, doctors } = data;
+  const execsInScope = region ? executives.filter((e) => e.region === region) : executives;
+  const execStats = execsInScope.map((exec) => {
+    const pincodes = new Set(coverage.filter((c) => c.executive_id === exec.id).map((c) => c.pincode));
+    const myTasks = tasks.filter((t) => t.pincode && pincodes.has(t.pincode));
+    const done = myTasks.filter((t) => t.status === "done").length;
+    const pct = myTasks.length > 0 ? Math.round((done / myTasks.length) * 100) : 0;
+    return { exec, pincodes, taskCount: myTasks.length, done, pct };
+  });
+  const scopePincodes = [...new Set(coverage.filter((c) => execsInScope.some((e) => e.id === c.executive_id)).map((c) => c.pincode))];
+  const scopeTasks = tasks.filter((t) => !t.pincode || scopePincodes.includes(t.pincode));
+  const totalDone = scopeTasks.filter((t) => t.status === "done").length;
+  const totalOpen = scopeTasks.length - totalDone;
+  const overallPct = scopeTasks.length > 0 ? Math.round((totalDone / scopeTasks.length) * 100) : 0;
+  const scopeDoctors = doctors.filter((d) => scopePincodes.includes(d.pincode)).length;
+  const topExecutives = [...execStats].sort((a, b) => b.pct - a.pct).slice(0, 3).map((r) => [r.exec.name, r.exec.region || r.exec.city || "—", `${r.pct}%`]);
+  const tableRows = execStats.slice(0, 6).map((r) => [r.exec.name, r.taskCount, r.done, `${r.pct}%`]);
+  const categories = execStats.slice(0, 6).map((r) => r.exec.name);
+  const targets = execStats.slice(0, 6).map((r) => r.taskCount);
+  const achieved = execStats.slice(0, 6).map((r) => r.done);
+  return (
+    <>
+      <div className="stats">
+        <Stat icon="♙" title="My Executives" value={execsInScope.length} text={scopeLabel} type="blue" />
+        <Stat icon="◎" title="Total Tasks" value={scopeTasks.length} text="This period" type="green" />
+        <Stat icon="▣" title="Pin Codes" value={scopePincodes.length} text="Covered" type="orange" />
+        <Stat icon="₹" title="Completion" value={`${overallPct}%`} text={`${scopeDoctors} doctors in scope`} type="red" />
+      </div>
+      <div className="two-columns">
+        <Chart title="Team Target vs Achievement" categories={categories.length ? categories : ["—"]} targets={targets.length ? targets : [0]} achieved={achieved.length ? achieved : [0]} />
+        <Achievement percentage={`${overallPct}%`} achieved={totalDone} progress={0} pending={totalOpen} />
+      </div>
+      <div className="two-columns">
+        <Performers title="Top Performing Executives" people={topExecutives} />
+        <DashTable title="Executive Performance" headers={["Executive", "Tasks", "Done", "%"]} rows={tableRows} />
+      </div>
+    </>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────
+   SHELL
+───────────────────────────────────────────────────────── */
 const ROLES = {
   EXECUTIVE: "executive",
   MANAGER: "manager",
@@ -919,7 +1301,6 @@ export default function SalesCrm({ role, onSwitchRole, onExit }) {
   const [regionalId, setRegionalId] = useState(null);
   const [region, setRegion] = useState("");
   const [profileOpen, setProfileOpen] = useState(false);
-  // Active sidebar section: "dashboard" | "doctors" | "plan" | "reports"
   const [activeSection, setActiveSection] = useState("dashboard");
 
   useEffect(() => {
@@ -952,8 +1333,6 @@ export default function SalesCrm({ role, onSwitchRole, onExit }) {
     return name.trim().charAt(0).toUpperCase();
   }
 
-  // When switching role via the role buttons in the sidebar, also snap
-  // back to dashboard so content area always matches.
   function handleSwitchRole(newRole) {
     setActiveSection("dashboard");
     onSwitchRole(newRole);
@@ -976,23 +1355,28 @@ export default function SalesCrm({ role, onSwitchRole, onExit }) {
           <button
             className={"nav-item" + (activeSection === "dashboard" ? " active" : "")}
             onClick={() => setActiveSection("dashboard")}
-          > Dashboard
+          >
+           Dashboard
           </button>
           <button
             className={"nav-item" + (activeSection === "doctors" ? " active" : "")}
             onClick={() => setActiveSection("doctors")}
-          > Doctors
+          >
+             Doctors
           </button>
           <button
             className={"nav-item" + (activeSection === "plan" ? " active" : "")}
             onClick={() => setActiveSection("plan")}
-          > Plan
+          >
+             Plan
           </button>
           <button
             className={"nav-item" + (activeSection === "reports" ? " active" : "")}
             onClick={() => setActiveSection("reports")}
-          > Reports
+          >
+            Reports
           </button>
+
           <div className="nav-heading">SALES CRM</div>
           <button className={"nav-item" + (role === ROLES.REGIONAL ? " active" : "")} onClick={() => handleSwitchRole(ROLES.REGIONAL)}>
             Regional Managers
@@ -1070,6 +1454,7 @@ export default function SalesCrm({ role, onSwitchRole, onExit }) {
                 </select>
               </div>
             )}
+
             <button
               className="profile-avatar-btn"
               title={currentRecord ? `${currentRecord.name} — view profile` : "No profile selected"}
@@ -1082,8 +1467,6 @@ export default function SalesCrm({ role, onSwitchRole, onExit }) {
         </header>
 
         <section className="content">
-
-          {/* ── DASHBOARD ── */}
           {activeSection === "dashboard" && (
             <>
               {data.loading && <p style={{ color: "#7f8b98" }}>Loading dashboard…</p>}
@@ -1100,20 +1483,17 @@ export default function SalesCrm({ role, onSwitchRole, onExit }) {
             </>
           )}
 
-          {/* ── REPORTS ── */}
           {activeSection === "reports" && (
             <ReportsView data={data} execId={execId} />
           )}
 
-          {/* ── DOCTORS ── */}
           {activeSection === "doctors" && (
             <DoctorsView data={data} execId={execId} />
           )}
 
-          {/* ── PLAN (placeholder) ── */}
           {activeSection === "plan" && (
             <div className="panel" style={{ padding: "2rem", textAlign: "center", color: "var(--muted-foreground)" }}>
-              <h3 style={{ marginBottom: 8 }}>Plan</h3>
+              <h3 style={{ marginBottom: 8, color: "var(--foreground)" }}>Territory Plan</h3>
               <p>Territory planning will be available here.</p>
             </div>
           )}
