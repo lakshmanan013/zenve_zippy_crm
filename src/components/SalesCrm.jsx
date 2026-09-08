@@ -10,6 +10,7 @@ import {
 import logo from "../assets/zenve-zippy-logo.png";
 import "./SalesCRM.css";
 import PlanView from "./planView.jsx";
+import { usePlanStats, PLAN_MONTH_KEY, PLAN_MONTH_LABEL } from "./planData.js";
 
 /* ─────────────────────────────────────────────────────────
    ROLE → TABLE KEY MAP
@@ -1180,9 +1181,120 @@ function DoctorsView({ data, execId }) {
 }
 
 /* ─────────────────────────────────────────────────────────
+   PLAN TARGET PANEL
+   Shown on both Executive and Team dashboards whenever a
+   monthly plan exists for the current period.
+───────────────────────────────────────────────────────── */
+function PlanTargetPanel({ planStats, onGoToPlan }) {
+  if (!planStats || !planStats.has_plan) {
+    return (
+      <div className="panel pln-target-empty">
+        <div className="pln-target-empty-icon">🗓</div>
+        <div>
+          <strong>No monthly plan for {PLAN_MONTH_LABEL}</strong>
+          <p className="pln-hint" style={{ marginTop: 3 }}>
+            Go to the Plan section to create and manage the monthly visit schedule.
+          </p>
+        </div>
+        {onGoToPlan && (
+          <button className="rpt-btn-outline pln-target-btn" onClick={onGoToPlan}>
+            Go to Plan →
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  const {
+    total_doctors   = 0,
+    completed       = 0,
+    pending         = 0,
+    planned_visits  = 0,
+    daily_target    = 0,
+    working_days    = 0,
+    completion_pct  = 0,
+    plan_status     = "—",
+  } = planStats;
+
+  const statusCls = {
+    Approved:    "pln-planstatus-approved",
+    Submitted:   "pln-planstatus-submitted",
+    Draft:       "pln-planstatus-draft",
+    Rejected:    "pln-planstatus-rejected",
+    "In Progress": "pln-planstatus-in-progress",
+    Completed:   "pln-planstatus-completed",
+  }[plan_status] ?? "pln-planstatus-draft";
+
+  const barColor = completion_pct >= 80
+    ? "var(--chart-1)"
+    : completion_pct >= 50
+    ? "oklch(70% .16 75)"
+    : "var(--destructive)";
+
+  return (
+    <div className="panel pln-target-panel">
+      {/* ── header row ── */}
+      <div className="pln-target-header">
+        <div>
+          <h2 className="pln-target-title">
+            Monthly Visit Target — {PLAN_MONTH_LABEL}
+          </h2>
+          <p className="pln-hint">
+            {daily_target} doctors/day · {working_days} working days
+          </p>
+        </div>
+        <div className="pln-target-header-right">
+          <span className={"pln-planstatus " + statusCls}>{plan_status}</span>
+          {onGoToPlan && (
+            <button className="rpt-btn-outline pln-target-btn" onClick={onGoToPlan}>
+              View Plan
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* ── stat pills ── */}
+      <div className="pln-target-pills">
+        <div className="pln-target-pill">
+          <strong>{total_doctors}</strong>
+          <span>Target</span>
+        </div>
+        <div className="pln-target-pill pln-target-pill-green">
+          <strong>{completed}</strong>
+          <span>Completed</span>
+        </div>
+        <div className="pln-target-pill pln-target-pill-orange">
+          <strong>{pending}</strong>
+          <span>Pending</span>
+        </div>
+        <div className="pln-target-pill">
+          <strong>{planned_visits}</strong>
+          <span>Scheduled</span>
+        </div>
+      </div>
+
+      {/* ── progress bar ── */}
+      <div className="pln-target-progress-row">
+        <div className="pln-target-progress-track">
+          <div
+            className="pln-target-progress-fill"
+            style={{ width: `${Math.min(100, completion_pct)}%`, background: barColor }}
+          />
+        </div>
+        <span className="pln-target-pct">{completion_pct}%</span>
+      </div>
+      <p className="pln-hint" style={{ marginTop: 5 }}>
+        <strong>{completed}</strong> of <strong>{total_doctors}</strong> doctors
+        visited this month
+      </p>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────
    EXECUTIVE DASHBOARD
 ───────────────────────────────────────────────────────── */
-function ExecutiveDashboard({ data, execId }) {
+function ExecutiveDashboard({ data, execId, planStats, onGoToPlan }) {
   const { executives, coverage, tasks, doctors, products } = data;
   const exec = executives.find((e) => e.id === execId) || executives[0];
   const myPincodes = new Set(coverage.filter((c) => c.executive_id === exec?.id).map((c) => c.pincode));
@@ -1216,10 +1328,22 @@ function ExecutiveDashboard({ data, execId }) {
     .map((t) => [t.title, `pin ${t.pincode || "—"} · ${String(t.priority || "").toUpperCase()}`, t.due_date]);
   return (
     <>
+      {/* ── Plan Target Panel ── */}
+      <PlanTargetPanel planStats={planStats} onGoToPlan={onGoToPlan} />
+
+      {/* ── Stat cards — plan completion replaces the generic "% done" card ── */}
       <div className="stats">
         <Stat icon="◎" title="My Tasks" value={myTasks.length} text={`${open} open`} type="blue" />
-        <Stat icon="✓" title="Completed" value={done} text={`${donePct}% done`} type="green" />
-        <Stat icon="♙" title="Pin Codes Covered" value={myPincodes.size} text="Assigned coverage" type="orange" />
+        <Stat icon="✓" title="Tasks Done" value={done} text={`${donePct}% complete`} type="green" />
+        <Stat
+          icon="🗓"
+          title="Plan Target"
+          value={planStats?.has_plan ? `${planStats.completion_pct ?? 0}%` : "—"}
+          text={planStats?.has_plan
+            ? `${planStats.completed ?? 0} / ${planStats.total_doctors ?? 0} visits`
+            : "No plan yet"}
+          type="orange"
+        />
         <Stat icon="⚕" title="Doctors In Area" value={pincodeRows.reduce((s, r) => s + r.doctorCount, 0)} text="Across my pin codes" type="red" />
       </div>
       <div className="two-columns">
@@ -1240,7 +1364,7 @@ function ExecutiveDashboard({ data, execId }) {
 /* ─────────────────────────────────────────────────────────
    TEAM DASHBOARD
 ───────────────────────────────────────────────────────── */
-function TeamDashboard({ data, region, scopeLabel }) {
+function TeamDashboard({ data, region, scopeLabel, planStats, onGoToPlan }) {
   const { executives, coverage, tasks, doctors } = data;
   const execsInScope = region ? executives.filter((e) => e.region === region) : executives;
   const execStats = execsInScope.map((exec) => {
@@ -1263,11 +1387,22 @@ function TeamDashboard({ data, region, scopeLabel }) {
   const achieved = execStats.slice(0, 6).map((r) => r.done);
   return (
     <>
+      {/* ── Plan Target Panel ── */}
+      <PlanTargetPanel planStats={planStats} onGoToPlan={onGoToPlan} />
+
       <div className="stats">
         <Stat icon="♙" title="My Executives" value={execsInScope.length} text={scopeLabel} type="blue" />
         <Stat icon="◎" title="Total Tasks" value={scopeTasks.length} text="This period" type="green" />
-        <Stat icon="▣" title="Pin Codes" value={scopePincodes.length} text="Covered" type="orange" />
-        <Stat icon="₹" title="Completion" value={`${overallPct}%`} text={`${scopeDoctors} doctors in scope`} type="red" />
+        <Stat
+          icon="🗓"
+          title="Plan Completion"
+          value={planStats?.has_plan ? `${planStats.completion_pct ?? 0}%` : "—"}
+          text={planStats?.has_plan
+            ? `${planStats.completed ?? 0} / ${planStats.total_doctors ?? 0} visits`
+            : "No plan yet"}
+          type="orange"
+        />
+        <Stat icon="₹" title="Task Completion" value={`${overallPct}%`} text={`${scopeDoctors} doctors in scope`} type="red" />
       </div>
       <div className="two-columns">
         <Chart title="Team Target vs Achievement" categories={categories.length ? categories : ["—"]} targets={targets.length ? targets : [0]} achieved={achieved.length ? achieved : [0]} />
@@ -1323,6 +1458,10 @@ export default function SalesCrm({ role, onSwitchRole, onExit }) {
   useEffect(() => {
     if (!regionalId && data.regionalManagers.length) setRegionalId(data.regionalManagers[0].id);
   }, [data.regionalManagers, regionalId]);
+
+  // ── Plan stats for the active executive (shown on the dashboard)
+  // usePlanStats is a lightweight hook: just one GET /plan-stats/{id} call
+  const { stats: planStats } = usePlanStats(execId, PLAN_MONTH_KEY);
 
   const regions = useMemo(
     () => [...new Set(data.executives.map((e) => e.region).filter(Boolean))],
@@ -1481,13 +1620,30 @@ export default function SalesCrm({ role, onSwitchRole, onExit }) {
               {data.loading && <p style={{ color: "#7f8b98" }}>Loading dashboard…</p>}
               {data.error && <div className="dash-error">{data.error}</div>}
               {!data.loading && !data.error && role === ROLES.EXECUTIVE && (
-                <ExecutiveDashboard data={data} execId={execId} />
+                <ExecutiveDashboard
+                  data={data}
+                  execId={execId}
+                  planStats={planStats}
+                  onGoToPlan={() => setActiveSection("plan")}
+                />
               )}
               {!data.loading && !data.error && role === ROLES.MANAGER && (
-                <TeamDashboard data={data} region={region || null} scopeLabel="Active team members" />
+                <TeamDashboard
+                  data={data}
+                  region={region || null}
+                  scopeLabel="Active team members"
+                  planStats={planStats}
+                  onGoToPlan={() => setActiveSection("plan")}
+                />
               )}
               {!data.loading && !data.error && role === ROLES.REGIONAL && (
-                <TeamDashboard data={data} region={region || null} scopeLabel="Across all regions" />
+                <TeamDashboard
+                  data={data}
+                  region={region || null}
+                  scopeLabel="Across all regions"
+                  planStats={planStats}
+                  onGoToPlan={() => setActiveSection("plan")}
+                />
               )}
             </>
           )}

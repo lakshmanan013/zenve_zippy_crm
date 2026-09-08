@@ -451,6 +451,63 @@ class ExecutiveAlert(Base):
     pincode = sqlalchemy.Column(sqlalchemy.String(20))
     is_read = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
     created_at = sqlalchemy.Column(sqlalchemy.DateTime,default=lambda: datetime.now(ZoneInfo("Asia/Kolkata")).replace(tzinfo=None))
+
+# ── PLAN MODULE ──────────────────────────────────────────────────────────────
+class MonthlyPlan(Base):
+    """One row per executive per calendar month."""
+    __tablename__ = "monthly_plans"
+    id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, index=True)
+    executive_id = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("sales_executives.id"), nullable=False)
+    month_key = sqlalchemy.Column(sqlalchemy.String(10), nullable=False)   # e.g. "2026-09"
+    month_label = sqlalchemy.Column(sqlalchemy.String(50))
+    working_days = sqlalchemy.Column(sqlalchemy.Integer, default=0)
+    daily_target = sqlalchemy.Column(sqlalchemy.Integer, default=0)
+    total_doctors = sqlalchemy.Column(sqlalchemy.Integer, default=0)
+    planning_method = sqlalchemy.Column(sqlalchemy.String(20), default="auto")  # "auto" | "manual"
+    status = sqlalchemy.Column(sqlalchemy.String(30), default="Draft")
+    submitted_at = sqlalchemy.Column(sqlalchemy.DateTime, nullable=True)
+    approved_at = sqlalchemy.Column(sqlalchemy.DateTime, nullable=True)
+    approved_by = sqlalchemy.Column(sqlalchemy.String(150), nullable=True)
+    rejection_reason = sqlalchemy.Column(sqlalchemy.Text, nullable=True)
+    created_at = sqlalchemy.Column(sqlalchemy.DateTime, default=lambda: datetime.now(ZoneInfo("Asia/Kolkata")).replace(tzinfo=None))
+    __table_args__ = (sqlalchemy.UniqueConstraint("executive_id", "month_key", name="uq_exec_month"),)
+
+class PlanVisit(Base):
+    """One row per doctor scheduled in a monthly plan."""
+    __tablename__ = "plan_visits"
+    id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, index=True)
+    plan_id = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("monthly_plans.id"), nullable=False)
+    executive_id = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("sales_executives.id"), nullable=False)
+    doctor_id = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("doctors.id"), nullable=False)
+    scheduled_date = sqlalchemy.Column(sqlalchemy.Date, nullable=False)
+    visit_time = sqlalchemy.Column(sqlalchemy.String(20), default="10:00 AM")
+    status = sqlalchemy.Column(sqlalchemy.String(30), default="Planned")
+    reschedule_reason = sqlalchemy.Column(sqlalchemy.String(200), nullable=True)
+    rescheduled_from = sqlalchemy.Column(sqlalchemy.Date, nullable=True)
+    created_at = sqlalchemy.Column(sqlalchemy.DateTime, default=lambda: datetime.now(ZoneInfo("Asia/Kolkata")).replace(tzinfo=None))
+
+class VisitReport(Base):
+    """Post-visit report linked to a plan_visit."""
+    __tablename__ = "visit_reports"
+    id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, index=True)
+    plan_visit_id = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("plan_visits.id"), nullable=False)
+    executive_id = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("sales_executives.id"), nullable=False)
+    doctor_id = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("doctors.id"), nullable=False)
+    visit_date = sqlalchemy.Column(sqlalchemy.Date, nullable=False)
+    visit_time = sqlalchemy.Column(sqlalchemy.String(20))
+    location = sqlalchemy.Column(sqlalchemy.String(300))
+    purpose = sqlalchemy.Column(sqlalchemy.String(150))
+    products_discussed = sqlalchemy.Column(sqlalchemy.Text)
+    notes = sqlalchemy.Column(sqlalchemy.Text)
+    doctor_feedback = sqlalchemy.Column(sqlalchemy.Text)
+    next_followup_date = sqlalchemy.Column(sqlalchemy.Date, nullable=True)
+    next_action = sqlalchemy.Column(sqlalchemy.String(300))
+    remarks = sqlalchemy.Column(sqlalchemy.Text)
+    follow_up_required = sqlalchemy.Column(sqlalchemy.Boolean, default=True)
+    status = sqlalchemy.Column(sqlalchemy.String(30), default="Draft")   # "Draft" | "Submitted"
+    submitted_at = sqlalchemy.Column(sqlalchemy.DateTime, nullable=True)
+    created_at = sqlalchemy.Column(sqlalchemy.DateTime, default=lambda: datetime.now(ZoneInfo("Asia/Kolkata")).replace(tzinfo=None))
+
 Base.metadata.create_all(bind=engine)
 class PetParentCreate(pydantic.BaseModel):
     full_name: str
@@ -3309,4 +3366,402 @@ def delete_executive_alert(alert_id: int,db: sqlalchemy.orm.Session = fastapi.De
     return {
         "message": "Executive alert deleted successfully",
         "id": alert_id
+    }
+
+# ═══════════════════════════════════════════════════════════════════
+#  PLAN MODULE — Pydantic schemas + CRUD endpoints
+# ═══════════════════════════════════════════════════════════════════
+
+# ── Schemas ──────────────────────────────────────────────────────────
+class MonthlyPlanCreate(pydantic.BaseModel):
+    executive_id: int
+    month_key: str
+    month_label: Optional[str] = None
+    working_days: int = 0
+    daily_target: int = 0
+    total_doctors: int = 0
+    planning_method: str = "auto"
+    status: str = "Draft"
+    submitted_at: Optional[datetime] = None
+    approved_at: Optional[datetime] = None
+    approved_by: Optional[str] = None
+    rejection_reason: Optional[str] = None
+
+class MonthlyPlanUpdate(pydantic.BaseModel):
+    status: Optional[str] = None
+    working_days: Optional[int] = None
+    daily_target: Optional[int] = None
+    total_doctors: Optional[int] = None
+    planning_method: Optional[str] = None
+    submitted_at: Optional[datetime] = None
+    approved_at: Optional[datetime] = None
+    approved_by: Optional[str] = None
+    rejection_reason: Optional[str] = None
+
+class PlanVisitCreate(pydantic.BaseModel):
+    plan_id: int
+    executive_id: int
+    doctor_id: int
+    scheduled_date: date
+    visit_time: str = "10:00 AM"
+    status: str = "Planned"
+    reschedule_reason: Optional[str] = None
+    rescheduled_from: Optional[date] = None
+
+class PlanVisitUpdate(pydantic.BaseModel):
+    scheduled_date: Optional[date] = None
+    visit_time: Optional[str] = None
+    status: Optional[str] = None
+    reschedule_reason: Optional[str] = None
+    rescheduled_from: Optional[date] = None
+
+class VisitReportCreate(pydantic.BaseModel):
+    plan_visit_id: int
+    executive_id: int
+    doctor_id: int
+    visit_date: date
+    visit_time: Optional[str] = None
+    location: Optional[str] = None
+    purpose: Optional[str] = None
+    products_discussed: Optional[str] = None
+    notes: Optional[str] = None
+    doctor_feedback: Optional[str] = None
+    next_followup_date: Optional[date] = None
+    next_action: Optional[str] = None
+    remarks: Optional[str] = None
+    follow_up_required: bool = True
+    status: str = "Draft"
+    submitted_at: Optional[datetime] = None
+
+class VisitReportUpdate(pydantic.BaseModel):
+    visit_date: Optional[date] = None
+    visit_time: Optional[str] = None
+    location: Optional[str] = None
+    purpose: Optional[str] = None
+    products_discussed: Optional[str] = None
+    notes: Optional[str] = None
+    doctor_feedback: Optional[str] = None
+    next_followup_date: Optional[date] = None
+    next_action: Optional[str] = None
+    remarks: Optional[str] = None
+    follow_up_required: Optional[bool] = None
+    status: Optional[str] = None
+    submitted_at: Optional[datetime] = None
+
+def plan_response(obj):
+    """Serialize a plan ORM object to a JSON-safe dict."""
+    data = {k: v for k, v in obj.__dict__.items() if k != "_sa_instance_state"}
+    # Convert date/datetime to ISO strings so FastAPI can serialise them
+    for k, v in data.items():
+        if isinstance(v, datetime):
+            data[k] = v.isoformat()
+        elif isinstance(v, date):
+            data[k] = v.isoformat()
+    return data
+
+# ── /monthly-plans ────────────────────────────────────────────────────
+@app.post("/monthly-plans")
+def create_monthly_plan(data: MonthlyPlanCreate, db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
+    existing = (
+        db.query(MonthlyPlan)
+        .filter(MonthlyPlan.executive_id == data.executive_id, MonthlyPlan.month_key == data.month_key)
+        .first()
+    )
+    if existing:
+        raise fastapi.HTTPException(status_code=409, detail="Monthly plan already exists for this executive and month")
+    plan = MonthlyPlan(**data.model_dump())
+    db.add(plan)
+    try:
+        db.commit()
+        db.refresh(plan)
+    except Exception as e:
+        db.rollback()
+        raise fastapi.HTTPException(status_code=400, detail=str(e))
+    return plan_response(plan)
+
+@app.get("/monthly-plans")
+def get_monthly_plans(
+    executive_id: Optional[int] = None,
+    month_key: Optional[str] = None,
+    db: sqlalchemy.orm.Session = fastapi.Depends(get_db),
+):
+    q = db.query(MonthlyPlan)
+    if executive_id is not None:
+        q = q.filter(MonthlyPlan.executive_id == executive_id)
+    if month_key:
+        q = q.filter(MonthlyPlan.month_key == month_key)
+    return [plan_response(p) for p in q.all()]
+
+@app.get("/monthly-plans/{plan_id}")
+def get_monthly_plan(plan_id: int, db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
+    plan = db.query(MonthlyPlan).filter(MonthlyPlan.id == plan_id).first()
+    if not plan:
+        raise fastapi.HTTPException(status_code=404, detail="Monthly plan not found")
+    return plan_response(plan)
+
+@app.put("/monthly-plans/{plan_id}")
+def update_monthly_plan(plan_id: int, data: MonthlyPlanUpdate, db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
+    plan = db.query(MonthlyPlan).filter(MonthlyPlan.id == plan_id).first()
+    if not plan:
+        raise fastapi.HTTPException(status_code=404, detail="Monthly plan not found")
+    for field, value in data.model_dump(exclude_unset=True).items():
+        setattr(plan, field, value)
+    try:
+        db.commit()
+        db.refresh(plan)
+    except Exception as e:
+        db.rollback()
+        raise fastapi.HTTPException(status_code=400, detail=str(e))
+    return plan_response(plan)
+
+@app.delete("/monthly-plans/{plan_id}")
+def delete_monthly_plan(plan_id: int, db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
+    plan = db.query(MonthlyPlan).filter(MonthlyPlan.id == plan_id).first()
+    if not plan:
+        raise fastapi.HTTPException(status_code=404, detail="Monthly plan not found")
+    db.delete(plan)
+    db.commit()
+    return {"message": "Monthly plan deleted", "id": plan_id}
+
+# ── /monthly-plans/{id}/submit  /approve  /reject ────────────────────
+@app.post("/monthly-plans/{plan_id}/submit")
+def submit_monthly_plan(plan_id: int, db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
+    plan = db.query(MonthlyPlan).filter(MonthlyPlan.id == plan_id).first()
+    if not plan:
+        raise fastapi.HTTPException(status_code=404, detail="Monthly plan not found")
+    plan.status = "Submitted"
+    plan.submitted_at = datetime.now(ZoneInfo("Asia/Kolkata")).replace(tzinfo=None)
+    db.commit()
+    db.refresh(plan)
+    return plan_response(plan)
+
+@app.post("/monthly-plans/{plan_id}/approve")
+def approve_monthly_plan(
+    plan_id: int,
+    approved_by: Optional[str] = "Manager",
+    db: sqlalchemy.orm.Session = fastapi.Depends(get_db),
+):
+    plan = db.query(MonthlyPlan).filter(MonthlyPlan.id == plan_id).first()
+    if not plan:
+        raise fastapi.HTTPException(status_code=404, detail="Monthly plan not found")
+    plan.status = "Approved"
+    plan.approved_at = datetime.now(ZoneInfo("Asia/Kolkata")).replace(tzinfo=None)
+    plan.approved_by = approved_by
+    plan.rejection_reason = None
+    db.commit()
+    db.refresh(plan)
+    return plan_response(plan)
+
+class RejectBody(pydantic.BaseModel):
+    reason: str
+    request_changes: bool = False
+
+@app.post("/monthly-plans/{plan_id}/reject")
+def reject_monthly_plan(plan_id: int, body: RejectBody, db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
+    plan = db.query(MonthlyPlan).filter(MonthlyPlan.id == plan_id).first()
+    if not plan:
+        raise fastapi.HTTPException(status_code=404, detail="Monthly plan not found")
+    plan.status = "Draft" if body.request_changes else "Rejected"
+    plan.rejection_reason = body.reason
+    db.commit()
+    db.refresh(plan)
+    return plan_response(plan)
+
+# ── /plan-visits ──────────────────────────────────────────────────────
+@app.post("/plan-visits")
+def create_plan_visit(data: PlanVisitCreate, db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
+    visit = PlanVisit(**data.model_dump())
+    db.add(visit)
+    try:
+        db.commit()
+        db.refresh(visit)
+    except Exception as e:
+        db.rollback()
+        raise fastapi.HTTPException(status_code=400, detail=str(e))
+    return plan_response(visit)
+
+@app.post("/plan-visits/bulk")
+def bulk_create_plan_visits(
+    visits: list[PlanVisitCreate],
+    db: sqlalchemy.orm.Session = fastapi.Depends(get_db),
+):
+    """Create multiple plan visits in one request (used by auto-generate)."""
+    objs = [PlanVisit(**v.model_dump()) for v in visits]
+    db.bulk_save_objects(objs)
+    try:
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise fastapi.HTTPException(status_code=400, detail=str(e))
+    # Return the freshly committed rows
+    if visits:
+        plan_id = visits[0].plan_id
+        exec_id = visits[0].executive_id
+        rows = db.query(PlanVisit).filter(
+            PlanVisit.plan_id == plan_id,
+            PlanVisit.executive_id == exec_id,
+        ).all()
+        return [plan_response(r) for r in rows]
+    return []
+
+@app.get("/plan-visits")
+def get_plan_visits(
+    plan_id: Optional[int] = None,
+    executive_id: Optional[int] = None,
+    doctor_id: Optional[int] = None,
+    status: Optional[str] = None,
+    db: sqlalchemy.orm.Session = fastapi.Depends(get_db),
+):
+    q = db.query(PlanVisit)
+    if plan_id is not None:
+        q = q.filter(PlanVisit.plan_id == plan_id)
+    if executive_id is not None:
+        q = q.filter(PlanVisit.executive_id == executive_id)
+    if doctor_id is not None:
+        q = q.filter(PlanVisit.doctor_id == doctor_id)
+    if status:
+        q = q.filter(PlanVisit.status == status)
+    return [plan_response(v) for v in q.all()]
+
+@app.get("/plan-visits/{visit_id}")
+def get_plan_visit(visit_id: int, db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
+    visit = db.query(PlanVisit).filter(PlanVisit.id == visit_id).first()
+    if not visit:
+        raise fastapi.HTTPException(status_code=404, detail="Plan visit not found")
+    return plan_response(visit)
+
+@app.put("/plan-visits/{visit_id}")
+def update_plan_visit(visit_id: int, data: PlanVisitUpdate, db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
+    visit = db.query(PlanVisit).filter(PlanVisit.id == visit_id).first()
+    if not visit:
+        raise fastapi.HTTPException(status_code=404, detail="Plan visit not found")
+    for field, value in data.model_dump(exclude_unset=True).items():
+        setattr(visit, field, value)
+    try:
+        db.commit()
+        db.refresh(visit)
+    except Exception as e:
+        db.rollback()
+        raise fastapi.HTTPException(status_code=400, detail=str(e))
+    return plan_response(visit)
+
+@app.delete("/plan-visits/{visit_id}")
+def delete_plan_visit(visit_id: int, db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
+    visit = db.query(PlanVisit).filter(PlanVisit.id == visit_id).first()
+    if not visit:
+        raise fastapi.HTTPException(status_code=404, detail="Plan visit not found")
+    db.delete(visit)
+    db.commit()
+    return {"message": "Plan visit deleted", "id": visit_id}
+
+# ── /visit-reports ────────────────────────────────────────────────────
+@app.post("/visit-reports")
+def create_visit_report(data: VisitReportCreate, db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
+    report = VisitReport(**data.model_dump())
+    if data.status == "Submitted" and not report.submitted_at:
+        report.submitted_at = datetime.now(ZoneInfo("Asia/Kolkata")).replace(tzinfo=None)
+    db.add(report)
+    try:
+        db.commit()
+        db.refresh(report)
+    except Exception as e:
+        db.rollback()
+        raise fastapi.HTTPException(status_code=400, detail=str(e))
+    # Auto-mark the parent plan_visit as Completed when submitted
+    if data.status == "Submitted":
+        visit = db.query(PlanVisit).filter(PlanVisit.id == data.plan_visit_id).first()
+        if visit:
+            visit.status = "Completed"
+            db.commit()
+    return plan_response(report)
+
+@app.get("/visit-reports")
+def get_visit_reports(
+    plan_visit_id: Optional[int] = None,
+    executive_id: Optional[int] = None,
+    doctor_id: Optional[int] = None,
+    db: sqlalchemy.orm.Session = fastapi.Depends(get_db),
+):
+    q = db.query(VisitReport)
+    if plan_visit_id is not None:
+        q = q.filter(VisitReport.plan_visit_id == plan_visit_id)
+    if executive_id is not None:
+        q = q.filter(VisitReport.executive_id == executive_id)
+    if doctor_id is not None:
+        q = q.filter(VisitReport.doctor_id == doctor_id)
+    return [plan_response(r) for r in q.all()]
+
+@app.get("/visit-reports/{report_id}")
+def get_visit_report(report_id: int, db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
+    report = db.query(VisitReport).filter(VisitReport.id == report_id).first()
+    if not report:
+        raise fastapi.HTTPException(status_code=404, detail="Visit report not found")
+    return plan_response(report)
+
+@app.put("/visit-reports/{report_id}")
+def update_visit_report(report_id: int, data: VisitReportUpdate, db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
+    report = db.query(VisitReport).filter(VisitReport.id == report_id).first()
+    if not report:
+        raise fastapi.HTTPException(status_code=404, detail="Visit report not found")
+    updates = data.model_dump(exclude_unset=True)
+    # Auto-stamp submitted_at when status transitions to Submitted
+    if updates.get("status") == "Submitted" and not report.submitted_at:
+        updates["submitted_at"] = datetime.now(ZoneInfo("Asia/Kolkata")).replace(tzinfo=None)
+    for field, value in updates.items():
+        setattr(report, field, value)
+    try:
+        db.commit()
+        db.refresh(report)
+    except Exception as e:
+        db.rollback()
+        raise fastapi.HTTPException(status_code=400, detail=str(e))
+    # Sync parent plan_visit status
+    if updates.get("status") == "Submitted":
+        visit = db.query(PlanVisit).filter(PlanVisit.id == report.plan_visit_id).first()
+        if visit:
+            visit.status = "Completed"
+            db.commit()
+    return plan_response(report)
+
+@app.delete("/visit-reports/{report_id}")
+def delete_visit_report(report_id: int, db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
+    report = db.query(VisitReport).filter(VisitReport.id == report_id).first()
+    if not report:
+        raise fastapi.HTTPException(status_code=404, detail="Visit report not found")
+    db.delete(report)
+    db.commit()
+    return {"message": "Visit report deleted", "id": report_id}
+
+# ── /plan-stats/{executive_id} ────────────────────────────────────────
+@app.get("/plan-stats/{executive_id}")
+def get_plan_stats(
+    executive_id: int,
+    month_key: Optional[str] = None,
+    db: sqlalchemy.orm.Session = fastapi.Depends(get_db),
+):
+    """Quick summary endpoint used by the Dashboard to show plan progress."""
+    q = db.query(MonthlyPlan).filter(MonthlyPlan.executive_id == executive_id)
+    if month_key:
+        q = q.filter(MonthlyPlan.month_key == month_key)
+    plan = q.order_by(MonthlyPlan.id.desc()).first()
+    if not plan:
+        return {"has_plan": False, "total_doctors": 0, "completed": 0, "pending": 0, "completion_pct": 0, "plan_status": None}
+    visits = db.query(PlanVisit).filter(PlanVisit.plan_id == plan.id).all()
+    total = len(visits)
+    completed = sum(1 for v in visits if v.status == "Completed")
+    pending = total - completed
+    pct = round((completed / total * 100)) if total > 0 else 0
+    return {
+        "has_plan": True,
+        "plan_id": plan.id,
+        "month_key": plan.month_key,
+        "month_label": plan.month_label,
+        "total_doctors": plan.total_doctors,
+        "working_days": plan.working_days,
+        "daily_target": plan.daily_target,
+        "planned_visits": total,
+        "completed": completed,
+        "pending": pending,
+        "completion_pct": pct,
+        "plan_status": plan.status,
     }

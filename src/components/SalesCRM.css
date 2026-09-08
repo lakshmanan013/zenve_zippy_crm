@@ -1382,3 +1382,158 @@ textarea:focus-visible {
     animation-iteration-count: 1 !important;
   }
 }
+
+/* =========================================================
+   PLAN TARGET PANEL — shown on Executive & Team dashboards
+========================================================= */
+
+/* ── empty state (no plan yet) ── */
+.pln-target-empty {
+  display: flex;
+  align-items: center;
+  gap: .85rem;
+  padding: .9rem 1rem;
+  flex-wrap: wrap;
+}
+
+.pln-target-empty-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.pln-target-empty strong {
+  display: block;
+  font-size: .875rem;
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+/* ── full panel ── */
+.pln-target-panel {
+  padding: .9rem 1rem;
+  margin-bottom: 0;
+}
+
+.pln-target-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-bottom: .75rem;
+}
+
+.pln-target-title {
+  margin: 0;
+  font-size: .95rem;
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+.pln-target-header-right {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.pln-target-btn {
+  height: 30px !important;
+  padding: 0 .85rem !important;
+  font-size: .74rem !important;
+  white-space: nowrap;
+}
+
+/* ── stat pills row ── */
+.pln-target-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-bottom: .75rem;
+}
+
+.pln-target-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 72px;
+  padding: .45rem .65rem;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 4px);
+  background: var(--background);
+  text-align: center;
+}
+
+.pln-target-pill strong {
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--foreground);
+}
+
+.pln-target-pill span {
+  font-size: .66rem;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  color: var(--muted-foreground);
+  margin-top: 2px;
+}
+
+.pln-target-pill-green strong { color: oklch(40% .12 165); }
+.pln-target-pill-green        { background: oklch(96% .03 165); border-color: oklch(82% .06 165); }
+
+.pln-target-pill-orange strong { color: oklch(48% .13 75); }
+.pln-target-pill-orange        { background: oklch(96% .04 75); border-color: oklch(85% .07 75); }
+
+/* ── progress bar ── */
+.pln-target-progress-row {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+}
+
+.pln-target-progress-track {
+  flex: 1;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--secondary);
+  overflow: hidden;
+}
+
+.pln-target-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  transition: width .35s ease;
+}
+
+.pln-target-pct {
+  font-size: .85rem;
+  font-weight: 700;
+  min-width: 38px;
+  text-align: right;
+  color: var(--foreground);
+}
+
+
+/* =========================================================
+   PLAN STATUS BADGES (imported here from Plan.css tokens
+   so they work inside SalesCrm.jsx without importing Plan.css)
+========================================================= */
+.pln-planstatus {
+  display: inline-block;
+  padding: 3px 11px;
+  border-radius: 999px;
+  font-size: .7rem;
+  font-weight: 700;
+}
+.pln-planstatus-draft         { background: oklch(94% .02 180); color: var(--muted-foreground); }
+.pln-planstatus-submitted     { background: color-mix(in oklab, var(--primary) 15%, white); color: var(--primary); }
+.pln-planstatus-under-review  { background: oklch(95% .07 75); color: oklch(48% .13 75); }
+.pln-planstatus-approved      { background: oklch(92% .06 165); color: oklch(38% .12 165); }
+.pln-planstatus-in-progress   { background: color-mix(in oklab, var(--accent) 25%, white); color: oklch(45% .13 62); }
+.pln-planstatus-completed     { background: oklch(92% .06 165); color: oklch(38% .12 165); }
+.pln-planstatus-rejected      { background: oklch(94% .04 25); color: var(--destructive); }
+
+@media (max-width: 700px) {
+  .pln-target-pills { gap: .35rem; }
+  .pln-target-pill  { min-width: 60px; padding: .35rem .5rem; }
+}
