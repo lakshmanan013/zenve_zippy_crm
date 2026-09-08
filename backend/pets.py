@@ -7,7 +7,7 @@ import sqlalchemy.orm # pyright: ignore[reportMissingImports]
 from typing import Optional
 from datetime import datetime,date,time
 from zoneinfo import ZoneInfo
-
+from sqlalchemy import Column, String, Boolean, Integer, Date, DateTime, Float, Text;
 DATABASE_URL = sqlalchemy.engine.URL.create(
     drivername="mysql+pymysql",
     username="root",
@@ -114,9 +114,10 @@ class Doctor(Base):
     qualification = sqlalchemy.Column(sqlalchemy.String(300))
     specializations = sqlalchemy.Column(sqlalchemy.String(500))
     pincode = sqlalchemy.Column(sqlalchemy.String(20))
+    city = Column(String(150))
+    phone = Column(String(30))
     experience_years = sqlalchemy.Column(sqlalchemy.Integer)
     consultation_fee = sqlalchemy.Column(sqlalchemy.Float)
-    rating = sqlalchemy.Column(sqlalchemy.Float)
     verification_status = sqlalchemy.Column(sqlalchemy.String(50), default="pending")
     is_active = sqlalchemy.Column(sqlalchemy.Boolean, default=True)
 class ClinicHospital(Base):
@@ -501,9 +502,10 @@ class DoctorCreate(pydantic.BaseModel):
     qualification: Optional[str] = None
     specializations: Optional[str] = None
     pincode: Optional[str] = None
+    city: Optional[str] = None
+    phone: Optional[str] = None
     experience_years: Optional[int] = None
     consultation_fee: Optional[float] = None
-    rating: Optional[float] = None
     verification_status: str = "pending"
     is_active: str = "Yes"
 class ClinicHospitalCreate(pydantic.BaseModel):
@@ -1117,9 +1119,10 @@ def create_doctor(data: DoctorCreate,db: sqlalchemy.orm.Session = fastapi.Depend
         qualification=data.qualification,
         specializations=data.specializations,
         pincode=data.pincode,
+        city=data.city,
+        phone=data.phone,
         experience_years=data.experience_years,
         consultation_fee=data.consultation_fee,
-        rating=data.rating,
         verification_status=data.verification_status,
         is_active=yes_no_to_bool(data.is_active)
     )

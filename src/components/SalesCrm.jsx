@@ -9,6 +9,7 @@ import {
 } from "../api.js";
 import logo from "../assets/zenve-zippy-logo.png";
 import "./SalesCRM.css";
+import PlanView from "./planView.jsx";
 
 /* ─────────────────────────────────────────────────────────
    ROLE → TABLE KEY MAP
@@ -308,6 +309,9 @@ function PreCallModal({ visit, onClose, onSave }) {
           <div>
             <h2>Pre Call — {visit.doctorName}</h2>
             <p className="rpt-call-modal-sub">Sno: {visit.advaitNo} · <span className="rpt-doc-tag">{visit.tag}</span></p>
+            <p className="rpt-call-modal-sub">
+              Phone: {visit.phone || "—"} · City: {visit.city || "—"} · Pin: {visit.pincode || "—"} · Specialization: {visit.tag || "—"}
+            </p>
           </div>
           <button className="rpt-call-close" onClick={onClose} type="button">✕</button>
         </div>
@@ -324,7 +328,7 @@ function PreCallModal({ visit, onClose, onSave }) {
               />
             </div>
             <div className="rpt-call-field">
-              <label>Obective</label>
+              <label>Campaign / Sales Activity</label>
               <input
                 value={campaign}
                 onChange={(e) => setCampaign(e.target.value)}
@@ -393,6 +397,9 @@ function PostCallModal({ visit, onClose, onSave }) {
           <div>
             <h2>Post Call — {visit.doctorName}</h2>
             <p className="rpt-call-modal-sub">Sno: {visit.advaitNo} · <span className="rpt-doc-tag">{visit.tag}</span></p>
+            <p className="rpt-call-modal-sub">
+              Phone: {visit.phone || "—"} · City: {visit.city || "—"} · Pin: {visit.pincode || "—"} · Specialization: {visit.tag || "—"}
+            </p>
           </div>
           <button className="rpt-call-close" onClick={onClose} type="button">✕</button>
         </div>
@@ -409,7 +416,7 @@ function PostCallModal({ visit, onClose, onSave }) {
               />
             </div>
             <div className="rpt-call-field">
-              <label>Objective</label>
+              <label>Campaign / Sales Activity</label>
               <input
                 value={campaign}
                 onChange={(e) => setCampaign(e.target.value)}
@@ -492,6 +499,8 @@ function ReportedCallsModal({ visits, onClose }) {
                   <tr>
                     <th>Sno</th>
                     <th>Doctor</th>
+                    <th>Phone</th>
+                    <th>City</th>
                     <th>Product</th>
                     <th>Discussed</th>
                     <th>Outcome</th>
@@ -508,6 +517,8 @@ function ReportedCallsModal({ visits, onClose }) {
                           <span className="rpt-doc-tag">{v.tag}</span>
                         </div>
                       </td>
+                      <td>{v.phone || "—"}</td>
+                      <td>{v.city || "—"}</td>
                       <td style={{ color: "var(--primary)" }}>{v.brands}</td>
                       <td style={{ color: "oklch(52% .14 165)" }}>{v.campaign}</td>
                       <td>
@@ -605,6 +616,8 @@ function ReportsView({ data, execId }) {
           : "GEN",
         qualification: doc.qualification || "",
         pincode: doc.pincode,
+        phone: doc.phone || "—",
+        city: doc.city || "—",
         brands: "—",
         campaign: "—",
         status: "Not Reported",
@@ -640,6 +653,8 @@ function ReportsView({ data, execId }) {
           : "GEN",
         qualification: doc.qualification || "",
         pincode: doc.pincode,
+        phone: doc.phone || "—",
+        city: doc.city || "—",
         brands: "—",
         campaign: "—",
         status: "Not Reported",
@@ -765,7 +780,7 @@ function ReportsView({ data, execId }) {
           <div className="rpt-search-input-wrap">
             <input
               type="text"
-              placeholder="Type name, Advait No., or speciality…"
+              placeholder="Type name, S No., or speciality…"
               value={doctorSearch}
               onChange={(e) => setDoctorSearch(e.target.value)}
             />
@@ -849,6 +864,9 @@ function ReportsView({ data, execId }) {
                             {v.pincode && (
                               <span className="rpt-doc-pin"> {v.pincode}</span>
                             )}
+                          </div>
+                          <div className="rpt-doc-pin" style={{ marginTop: 2 }}>
+                            {v.phone || "—"} · {v.city || "—"}
                           </div>
                         </div>
                       </div>
@@ -987,9 +1005,12 @@ function DoctorsView({ data, execId }) {
       const matchSearch =
         !term ||
         d.name?.toLowerCase().includes(term) ||
-        String(d.pincode).includes(term) ||
+        d.qualification?.toLowerCase().includes(term) ||
         d.specializations?.toLowerCase().includes(term) ||
-        d.qualification?.toLowerCase().includes(term);
+        String(d.experience_years ?? "").includes(term) ||
+        d.phone?.toLowerCase().includes(term) ||
+        d.city?.toLowerCase().includes(term) ||
+        String(d.pincode ?? "").includes(term);
       const matchPin = filterPincode === "all" || String(d.pincode) === filterPincode;
       const isActive = d.is_active === "Yes" || d.is_active === true;
       const matchStatus =
@@ -1000,17 +1021,11 @@ function DoctorsView({ data, execId }) {
     });
   }, [myDoctors, search, filterPincode, filterStatus]);
 
-  function starRating(rating) {
-    const r = Math.min(5, Math.max(0, Math.round(Number(rating) || 0)));
-    return "★".repeat(r) + "☆".repeat(5 - r);
-  }
-
   return (
     <div className="doc-view-wrap">
 
       {/* ── PAGE TITLE — same pattern as Reports ── */}
       <div className="crm-page-title">
-        <span className="crm-page-back">⚕</span>
         <h2>Doctors in My Region</h2>
       </div>
 
@@ -1025,11 +1040,11 @@ function DoctorsView({ data, execId }) {
           </div>
         </div>
         <div className="doc-stat-card">
-          <div className="stat-icon blue">⚕</div>
+          <div className="stat-icon blue">₹</div>
           <div>
             <span>Total Doctors</span>
             <strong>{myDoctors.length}</strong>
-            <small>In my territory</small>
+            <small>In my Region</small>
           </div>
         </div>
         <div className="doc-stat-card">
@@ -1057,7 +1072,7 @@ function DoctorsView({ data, execId }) {
           <div className="rpt-search-input-wrap">
             <input
               type="text"
-              placeholder="Name, specialization, pin code, qualification…"
+              placeholder="Name, qualification, specialization, experience, phone, city, pin code…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -1095,14 +1110,14 @@ function DoctorsView({ data, execId }) {
           <table>
             <thead>
               <tr>
-                <th>#</th>
+                <th>Sno</th>
                 <th>Doctor Name</th>
                 <th>Qualification</th>
                 <th>Specialization</th>
-                <th>Pin Code</th>
                 <th>Experience</th>
-                <th>Consult Fee</th>
-                <th>Rating</th>
+                <th>Phone</th>
+                <th>City</th>
+                <th>Pin Code</th>
                 <th>Status</th>
               </tr>
             </thead>
@@ -1116,7 +1131,7 @@ function DoctorsView({ data, execId }) {
                       <div className="doc-name-cell">
                         <div className="doc-avatar">{doc.name?.charAt(0).toUpperCase() ?? "?"}</div>
                         <div>
-                          <span className="doc-name-text">{doc.name}</span>
+                          <span className="doc-name-text">{doc.name || "—"}</span>
                           {doc.verification_status && (
                             <div>
                               <span className={"doc-verify-badge doc-verify-" + doc.verification_status}>
@@ -1138,18 +1153,12 @@ function DoctorsView({ data, execId }) {
                         : <span className="doc-muted">—</span>
                       }
                     </td>
-                    <td><span className="doc-pincode-badge">{doc.pincode}</span></td>
                     <td className="doc-muted">
                       {doc.experience_years != null ? `${doc.experience_years} yrs` : "—"}
                     </td>
-                    <td className="doc-muted">
-                      {doc.consultation_fee != null ? `₹${doc.consultation_fee}` : "—"}
-                    </td>
-                    <td>
-                      <span className="doc-stars" title={`${doc.rating ?? 0}/5`}>
-                        {starRating(doc.rating)}
-                      </span>
-                    </td>
+                    <td className="doc-muted">{doc.phone || "—"}</td>
+                    <td className="doc-muted">{doc.city || "—"}</td>
+                    <td><span className="doc-pincode-badge">{doc.pincode || "—"}</span></td>
                     <td>
                       <span className={"doc-status-badge" + (isActive ? " active" : " inactive")}>
                         {isActive ? "Active" : "Inactive"}
@@ -1492,10 +1501,7 @@ export default function SalesCrm({ role, onSwitchRole, onExit }) {
           )}
 
           {activeSection === "plan" && (
-            <div className="panel" style={{ padding: "2rem", textAlign: "center", color: "var(--muted-foreground)" }}>
-              <h3 style={{ marginBottom: 8, color: "var(--foreground)" }}>Territory Plan</h3>
-              <p>Territory planning will be available here.</p>
-            </div>
+           <PlanView data={data} execId={execId} role={role} />
           )}
         </section>
       </main>

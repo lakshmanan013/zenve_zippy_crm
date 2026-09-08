@@ -1198,8 +1198,26 @@ button { cursor: pointer; }
 /* Table */
 .doc-table-panel { margin-bottom: 0; overflow-x: auto; }
 
-.doc-name-cell  { display: flex; align-items: center; gap: .55rem; }
-.doc-name-text  { display: block; font-size: .8rem; font-weight: 700; }
+.doc-name-text {
+  display: block;
+  font-size: .8rem;
+  font-weight: 700;
+  
+  /* Prevent text wrapping and add ellipsis */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis; 
+}
+
+.doc-name-cell {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  
+  /* Forces flex child to respect overflow limits */
+  min-width: 0; 
+}
+
 
 .doc-avatar {
   width: 32px; height: 32px;
