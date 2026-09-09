@@ -40,6 +40,7 @@ export default function RecordModal({ mode, columns, values, onChange, onSave, o
             value={value ?? ""}
             onChange={(e) => onChange(field.key, e.target.value)}
           >
+            <option value="" disabled>— select —</option>
             {(field.options || []).map((opt) => (
               <option key={opt} value={opt}>
                 {opt}

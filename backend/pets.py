@@ -8,6 +8,8 @@ from typing import Optional
 from datetime import datetime,date,time
 from zoneinfo import ZoneInfo
 from sqlalchemy import Column, String, Boolean, Integer, Date, DateTime, Float, Text;
+from sqlalchemy import delete
+
 DATABASE_URL = sqlalchemy.engine.URL.create(
     drivername="mysql+pymysql",
     username="root",
@@ -357,7 +359,9 @@ class MembershipPlan(Base):
     __tablename__ = "membership_plans"
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, index=True)
     name = sqlalchemy.Column(sqlalchemy.String(150), nullable=False)
+    credits = sqlalchemy.Column(sqlalchemy.Integer, default=0)
     price = sqlalchemy.Column(sqlalchemy.Float, default=0)
+    sku_range = sqlalchemy.Column(sqlalchemy.String(20), default="0-24")
     duration_days = sqlalchemy.Column(sqlalchemy.Integer)
     is_active = sqlalchemy.Column(sqlalchemy.Boolean, default=True)
 class PlanBenefit(Base):
@@ -734,7 +738,9 @@ class NotificationCreate(pydantic.BaseModel):
     is_read: bool = False
 class MembershipPlanCreate(pydantic.BaseModel):
     name: str
+    credits: Optional[int] = 0
     price: Optional[float] = 0
+    sku_range: Optional[str] = "0-24"
     duration_days: Optional[int] = None
     is_active: str = "Yes"
 class PlanBenefitCreate(pydantic.BaseModel):

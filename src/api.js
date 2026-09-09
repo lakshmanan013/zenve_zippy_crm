@@ -396,7 +396,9 @@ export const TABLE_CONFIG = {
     path: "/membership-plans",
     fields: [
       { key: "name", type: "text", required: true },
+      { key: "credits", type: "number" },
       { key: "price", type: "number" },
+      { key: "sku_range", type: "select", options: ["0-24", "25-49", "50-65+"], default: "0-24" },
       { key: "duration_days", type: "number" },
       { key: "is_active", type: "yesno", default: "Yes" },
     ],

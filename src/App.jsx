@@ -244,7 +244,7 @@ export default function App() {
 
       <RecordModal
         mode={modalMode}
-        columns={columns.map((f) => ({ key: f.key, label: f.label || f.key, type: f.type, readOnly: f.readOnly, required: f.required }))}
+        columns={columns.map((f) => ({ key: f.key, label: f.label || f.key, type: f.type, readOnly: f.readOnly, required: f.required, options: f.options, default: f.default }))}
         values={formValues}
         onChange={handleFieldChange}
         onSave={saveModal}
