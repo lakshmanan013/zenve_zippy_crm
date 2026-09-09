@@ -392,8 +392,8 @@ export const TABLE_CONFIG = {
 
     ],
   },
-  membership_plans: {
-    path: "/membership-plans",
+  vendor_membership_plans: {
+    path: "/vendor-membership-plans",
     fields: [
       { key: "name", type: "text", required: true },
       { key: "credits", type: "number" },
@@ -411,8 +411,8 @@ export const TABLE_CONFIG = {
       { key: "value", type: "text" },
     ],
   },
-  memberships: {
-    path: "/memberships",
+  vendors: {
+    path: "/vendors",
     fields: [
       { key: "user_id", type: "number", required: true },
       { key: "plan_id", type: "number", required: true },

@@ -355,8 +355,8 @@ class Notification(Base):
     channel = sqlalchemy.Column(sqlalchemy.String(100))
     is_read = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
     created_at = sqlalchemy.Column(sqlalchemy.DateTime,default=lambda: datetime.now(ZoneInfo("Asia/Kolkata")).replace(tzinfo=None))
-class MembershipPlan(Base):
-    __tablename__ = "membership_plans"
+class VendorMembershipPlan(Base):
+    __tablename__ = "vendor_membership_plans"
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, index=True)
     name = sqlalchemy.Column(sqlalchemy.String(150), nullable=False)
     credits = sqlalchemy.Column(sqlalchemy.Integer, default=0)
@@ -367,14 +367,14 @@ class MembershipPlan(Base):
 class PlanBenefit(Base):
     __tablename__ = "plan_benefits"
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, index=True)
-    plan_id = sqlalchemy.Column(sqlalchemy.Integer,sqlalchemy.ForeignKey("membership_plans.id"),nullable=False)
+    plan_id = sqlalchemy.Column(sqlalchemy.Integer,sqlalchemy.ForeignKey("vendor_membership_plans.id"),nullable=False)
     benefit = sqlalchemy.Column(sqlalchemy.String(300), nullable=False)
     value = sqlalchemy.Column(sqlalchemy.String(300))
-class Membership(Base):
-    __tablename__ = "memberships"
+class Vendor(Base):
+    __tablename__ = "vendors"
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, index=True)
     user_id = sqlalchemy.Column(sqlalchemy.Integer, nullable=False)
-    plan_id = sqlalchemy.Column(sqlalchemy.Integer,sqlalchemy.ForeignKey("membership_plans.id"),nullable=False)
+    plan_id = sqlalchemy.Column(sqlalchemy.Integer,sqlalchemy.ForeignKey("vendor_membership_plans.id"),nullable=False)
     started_on = sqlalchemy.Column(sqlalchemy.Date)
     expires_on = sqlalchemy.Column(sqlalchemy.Date)
     status = sqlalchemy.Column(sqlalchemy.String(50), default="active")
@@ -736,7 +736,7 @@ class NotificationCreate(pydantic.BaseModel):
     title: str
     channel: Optional[str] = None
     is_read: bool = False
-class MembershipPlanCreate(pydantic.BaseModel):
+class VendorMembershipPlanCreate(pydantic.BaseModel):
     name: str
     credits: Optional[int] = 0
     price: Optional[float] = 0
@@ -747,7 +747,7 @@ class PlanBenefitCreate(pydantic.BaseModel):
     plan_id: int
     benefit: str
     value: Optional[str] = None
-class MembershipCreate(pydantic.BaseModel):
+class VendorCreate(pydantic.BaseModel):
     user_id: int
     plan_id: int
     started_on: Optional[date] = None
@@ -2791,29 +2791,29 @@ def delete_notification(notification_id: int,db: sqlalchemy.orm.Session = fastap
     except Exception as e:
         db.rollback()
         raise fastapi.HTTPException(status_code=400,detail=str(e))
-@app.post("/membership-plans")
-def create_membership_plan(data: MembershipPlanCreate,db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
+@app.post("/vendor-membership-plans")
+def create_vendor_membership_plan(data: VendorMembershipPlanCreate,db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
     plan_data = data.model_dump()
     plan_data["is_active"] = yes_no_to_bool(plan_data["is_active"])
-    plan = MembershipPlan(**plan_data)
+    plan = VendorMembershipPlan(**plan_data)
     db.add(plan)
     db.commit()
     db.refresh(plan)
     return model_response(plan)
-@app.get("/membership-plans")
-def get_membership_plans(db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
-    return [model_response(item) for item in db.query(MembershipPlan).all()]
-@app.get("/membership-plans/{plan_id}")
-def get_membership_plan(plan_id: int,db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
-    plan = db.query(MembershipPlan).filter(MembershipPlan.id == plan_id).first()
+@app.get("/vendor-membership-plans")
+def get_vendor_membership_plans(db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
+    return [model_response(item) for item in db.query(VendorMembershipPlan).all()]
+@app.get("/vendor-membership-plans/{plan_id}")
+def get_vendor_membership_plan(plan_id: int,db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
+    plan = db.query(VendorMembershipPlan).filter(VendorMembershipPlan.id == plan_id).first()
     if not plan:
-        raise fastapi.HTTPException(status_code=404,detail="Membership plan not found")
+        raise fastapi.HTTPException(status_code=404,detail="Vendor membership plan not found")
     return model_response(plan)
-@app.put("/membership-plans/{plan_id}")
-def update_membershipplan(plan_id: int,data: MembershipPlanCreate,db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
-    record = db.query(MembershipPlan).filter(MembershipPlan.id == plan_id).first()
+@app.put("/vendor-membership-plans/{plan_id}")
+def update_vendor_membership_plan(plan_id: int,data: VendorMembershipPlanCreate,db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
+    record = db.query(VendorMembershipPlan).filter(VendorMembershipPlan.id == plan_id).first()
     if not record:
-        raise fastapi.HTTPException(status_code=404,detail="MembershipPlan not found")
+        raise fastapi.HTTPException(status_code=404,detail="VendorMembershipPlan not found")
     try:
         update_data = data.model_dump(exclude_unset=True)
         if "is_active" in update_data:
@@ -2828,16 +2828,16 @@ def update_membershipplan(plan_id: int,data: MembershipPlanCreate,db: sqlalchemy
     except Exception as e:
         db.rollback()
         raise fastapi.HTTPException(status_code=400,detail=str(e))
-@app.delete("/membership-plans/{plan_id}")
-def delete_membershipplan(plan_id: int,db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
-    record = db.query(MembershipPlan).filter(MembershipPlan.id == plan_id).first()
+@app.delete("/vendor-membership-plans/{plan_id}")
+def delete_vendor_membership_plan(plan_id: int,db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
+    record = db.query(VendorMembershipPlan).filter(VendorMembershipPlan.id == plan_id).first()
     if not record:
-        raise fastapi.HTTPException(status_code=404,detail="MembershipPlan not found")
+        raise fastapi.HTTPException(status_code=404,detail="VendorMembershipPlan not found")
     try:
         db.delete(record)
         db.commit()
         return {
-            "message": "MembershipPlan deleted successfully",
+            "message": "VendorMembershipPlan deleted successfully",
             "id": plan_id
         }
     except Exception as e:
@@ -2845,9 +2845,9 @@ def delete_membershipplan(plan_id: int,db: sqlalchemy.orm.Session = fastapi.Depe
         raise fastapi.HTTPException(status_code=400,detail=str(e))
 @app.post("/plan-benefits")
 def create_plan_benefit(data: PlanBenefitCreate,db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
-    plan = db.query(MembershipPlan).filter(MembershipPlan.id == data.plan_id).first()
+    plan = db.query(VendorMembershipPlan).filter(VendorMembershipPlan.id == data.plan_id).first()
     if not plan:
-        raise fastapi.HTTPException(status_code=404,detail="Membership plan not found")
+        raise fastapi.HTTPException(status_code=404,detail="Vendor membership plan not found")
     benefit = PlanBenefit(**data.model_dump())
     db.add(benefit)
     db.commit()
@@ -2896,32 +2896,32 @@ def delete_planbenefit(benefit_id: int,db: sqlalchemy.orm.Session = fastapi.Depe
     except Exception as e:
         db.rollback()
         raise fastapi.HTTPException(status_code=400, detail=str(e))
-@app.post("/memberships")
-def create_membership(data: MembershipCreate,db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
-    plan = db.query(MembershipPlan).filter(
-        MembershipPlan.id == data.plan_id).first()
+@app.post("/vendors")
+def create_vendor(data: VendorCreate,db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
+    plan = db.query(VendorMembershipPlan).filter(
+        VendorMembershipPlan.id == data.plan_id).first()
     if not plan:
-        raise fastapi.HTTPException(status_code=404,detail="Membership plan not found")
-    membership = Membership(**data.model_dump())
-    db.add(membership)
+        raise fastapi.HTTPException(status_code=404,detail="Vendor membership plan not found")
+    vendor = Vendor(**data.model_dump())
+    db.add(vendor)
     db.commit()
-    db.refresh(membership)
-    return membership
-@app.get("/memberships")
-def get_memberships(db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
-    return db.query(Membership).all()
-@app.get("/memberships/{membership_id}")
-def get_membership(membership_id: int,db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
-    membership = db.query(Membership).filter(
-        Membership.id == membership_id).first()
-    if not membership:
-        raise fastapi.HTTPException(status_code=404,detail="Membership not found")
-    return membership
-@app.put("/memberships/{membership_id}")
-def update_membership(membership_id: int,data: MembershipCreate,db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
-    record = db.query(Membership).filter(Membership.id == membership_id).first()
+    db.refresh(vendor)
+    return vendor
+@app.get("/vendors")
+def get_vendors(db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
+    return db.query(Vendor).all()
+@app.get("/vendors/{vendor_id}")
+def get_vendor(vendor_id: int,db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
+    vendor = db.query(Vendor).filter(
+        Vendor.id == vendor_id).first()
+    if not vendor:
+        raise fastapi.HTTPException(status_code=404,detail="Vendor not found")
+    return vendor
+@app.put("/vendors/{vendor_id}")
+def update_vendor(vendor_id: int,data: VendorCreate,db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
+    record = db.query(Vendor).filter(Vendor.id == vendor_id).first()
     if not record:
-        raise fastapi.HTTPException(status_code=404,detail="Membership not found")
+        raise fastapi.HTTPException(status_code=404,detail="Vendor not found")
     try:
         update_data = data.model_dump(exclude_unset=True)
         if "is_active" in update_data:
@@ -2936,17 +2936,17 @@ def update_membership(membership_id: int,data: MembershipCreate,db: sqlalchemy.o
     except Exception as e:
         db.rollback()
         raise fastapi.HTTPException(status_code=400,detail=str(e) )
-@app.delete("/memberships/{membership_id}")
-def delete_membership(membership_id: int,db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
-    record = db.query(Membership).filter(Membership.id == membership_id).first()
+@app.delete("/vendors/{vendor_id}")
+def delete_vendor(vendor_id: int,db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
+    record = db.query(Vendor).filter(Vendor.id == vendor_id).first()
     if not record:
-        raise fastapi.HTTPException(status_code=404,detail="Membership not found")
+        raise fastapi.HTTPException(status_code=404,detail="Vendor not found")
     try:
         db.delete(record)
         db.commit()
         return {
-            "message": "Membership deleted successfully",
-            "id": membership_id
+            "message": "Vendor deleted successfully",
+            "id": vendor_id
         }
     except Exception as e:
         db.rollback()

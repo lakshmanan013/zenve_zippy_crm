@@ -17,7 +17,7 @@ addresses:       { placeholder: "city or pincode", columns: ["city", "pincode"] 
   order_items:     { placeholder: "product_name",   column: "product_name"  },
   gps_locations:   { placeholder: "city",           column: "city"          },
   notifications:   { placeholder: "title",          column: "title"         },
-  membership_plans:{ placeholder: "name",          column: "name"           },
+  vendor_membership_plans:{ placeholder: "name",          column: "name"           },
   support_tickets: { placeholder: "subject",        column: "subject"       },
   geocoding_cache: { placeholder: "query",          column: "query"         },
   audit_logs:      { placeholder: "action",         column: "action"        },
